@@ -1,5 +1,5 @@
 ///
-module std.experimental.allocator.building_blocks.null_allocator;
+module stdx.allocator.building_blocks.null_allocator;
 
 /**
 $(D NullAllocator) is an emphatically empty implementation of the allocator

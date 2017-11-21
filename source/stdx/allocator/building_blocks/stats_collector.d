@@ -6,14 +6,14 @@ combinations of `Options` appropriately.
 
 Example:
 ----
-import std.experimental.allocator.gc_allocator : GCAllocator;
-import std.experimental.allocator.building_blocks.free_list : FreeList;
+import stdx.allocator.gc_allocator : GCAllocator;
+import stdx.allocator.building_blocks.free_list : FreeList;
 alias Allocator = StatsCollector!(GCAllocator, Options.bytesUsed);
 ----
 */
-module std.experimental.allocator.building_blocks.stats_collector;
+module stdx.allocator.building_blocks.stats_collector;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 
 /**
 _Options for $(D StatsCollector) defined below. Each enables during
@@ -656,8 +656,8 @@ public:
 ///
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.gc_allocator : GCAllocator;
     alias Allocator = StatsCollector!(GCAllocator, Options.all, Options.all);
 
     Allocator alloc;
@@ -669,7 +669,7 @@ public:
     import std.range : walkLength;
     import std.stdio : File;
 
-    auto f = deleteme ~ "-dlang.std.experimental.allocator.stats_collector.txt";
+    auto f = deleteme ~ "-dlang.stdx.allocator.stats_collector.txt";
     scope(exit) remove(f);
     Allocator.reportPerCallStatistics(File(f, "w"));
     alloc.reportStatistics(File(f, "a"));
@@ -705,8 +705,8 @@ public:
         assert(a.bytesUsed == 0);
      }
 
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.gc_allocator : GCAllocator;
     test!(StatsCollector!(GCAllocator, Options.all, Options.all));
     test!(StatsCollector!(FreeList!(GCAllocator, 128), Options.all,
         Options.all));
@@ -729,7 +729,7 @@ public:
         a.deallocate(b1);
         a.deallocate(b3);
     }
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.gc_allocator : GCAllocator;
     test!(StatsCollector!(GCAllocator, 0, 0));
 }

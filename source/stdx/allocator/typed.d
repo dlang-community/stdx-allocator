@@ -9,10 +9,10 @@ Macros:
 T2=$(TR <td style="text-align:left">$(D $1)</td> $(TD $(ARGS $+)))
 */
 
-module std.experimental.allocator.typed;
+module stdx.allocator.typed;
 
-import std.experimental.allocator;
-import std.experimental.allocator.common;
+import stdx.allocator;
+import stdx.allocator.common;
 import std.range : isInputRange, isForwardRange, walkLength, save, empty,
     front, popFront;
 import std.traits : isPointer, hasElaborateDestructor;
@@ -393,9 +393,9 @@ struct TypedAllocator(PrimaryAllocator, Policies...)
 ///
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mallocator : Mallocator;
-    import std.experimental.allocator.mmap_allocator : MmapAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mallocator : Mallocator;
+    import stdx.allocator.mmap_allocator : MmapAllocator;
     alias MyAllocator = TypedAllocator!(GCAllocator,
         AllocFlag.fixedSize | AllocFlag.threadLocal, Mallocator,
         AllocFlag.fixedSize | AllocFlag.threadLocal

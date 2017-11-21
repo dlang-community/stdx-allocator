@@ -1,8 +1,8 @@
 ///
-module std.experimental.allocator.building_blocks.region;
+module stdx.allocator.building_blocks.region;
 
-import std.experimental.allocator.building_blocks.null_allocator;
-import std.experimental.allocator.common;
+import stdx.allocator.building_blocks.null_allocator;
+import stdx.allocator.common;
 import std.typecons : Flag, Yes, No;
 
 /**
@@ -330,9 +330,9 @@ struct Region(ParentAllocator = NullAllocator,
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     // Create a scalable list of regions. Each gets at least 1MB at a time by
     // using malloc.
     auto batchAllocator = AllocatorList!(
@@ -348,7 +348,7 @@ struct Region(ParentAllocator = NullAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     // Create a 64 KB region allocated with malloc
     auto reg = Region!(Mallocator, Mallocator.alignment,
         Yes.growDownwards)(1024 * 64);
@@ -536,13 +536,13 @@ struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
     assert(a1.length == 101);
 
     // 128KB region, with fallback to the garbage collector.
-    import std.experimental.allocator.building_blocks.fallback_allocator
+    import stdx.allocator.building_blocks.fallback_allocator
         : FallbackAllocator;
-    import std.experimental.allocator.building_blocks.free_list
+    import stdx.allocator.building_blocks.free_list
         : FreeList;
-    import std.experimental.allocator.building_blocks.bitmapped_block
+    import stdx.allocator.building_blocks.bitmapped_block
         : BitmappedBlock;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     FallbackAllocator!(InSituRegion!(128 * 1024), GCAllocator) r2;
     const a2 = r2.allocate(102);
     assert(a2.length == 102);

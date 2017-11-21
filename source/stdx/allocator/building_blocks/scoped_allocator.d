@@ -1,7 +1,7 @@
 ///
-module std.experimental.allocator.building_blocks.scoped_allocator;
+module stdx.allocator.building_blocks.scoped_allocator;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 
 /**
 
@@ -22,7 +22,7 @@ struct ScopedAllocator(ParentAllocator)
         testAllocator!(() => ScopedAllocator());
     }
 
-    import std.experimental.allocator.building_blocks.affix_allocator
+    import stdx.allocator.building_blocks.affix_allocator
         : AffixAllocator;
     import std.traits : hasMember;
     import std.typecons : Ternary;
@@ -193,7 +193,7 @@ struct ScopedAllocator(ParentAllocator)
 ///
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     import std.typecons : Ternary;
     ScopedAllocator!Mallocator alloc;
     assert(alloc.empty == Ternary.yes);
@@ -204,15 +204,15 @@ struct ScopedAllocator(ParentAllocator)
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     testAllocator!(() => ScopedAllocator!GCAllocator());
 }
 
 @system unittest // https://issues.dlang.org/show_bug.cgi?id=16046
 {
     import std.exception;
-    import std.experimental.allocator;
-    import std.experimental.allocator.mallocator;
+    import stdx.allocator;
+    import stdx.allocator.mallocator;
     ScopedAllocator!Mallocator alloc;
     auto foo = alloc.make!int(1).enforce;
     auto bar = alloc.make!int(2).enforce;

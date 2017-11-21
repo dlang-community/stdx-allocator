@@ -1,7 +1,7 @@
 ///
-module std.experimental.allocator.building_blocks.free_tree;
+module stdx.allocator.building_blocks.free_tree;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 
 //debug = std_experimental_allocator_free_tree;
 
@@ -334,7 +334,7 @@ struct FreeTree(ParentAllocator)
 
     @system unittest // test a few simple configurations
     {
-        import std.experimental.allocator.gc_allocator;
+        import stdx.allocator.gc_allocator;
         FreeTree!GCAllocator a;
         auto b1 = a.allocate(10000);
         auto b2 = a.allocate(20000);
@@ -355,7 +355,7 @@ struct FreeTree(ParentAllocator)
 
     @system unittest // build a complex free tree
     {
-        import std.experimental.allocator.gc_allocator, std.range;
+        import stdx.allocator.gc_allocator, std.range;
         FreeTree!GCAllocator a;
         uint[] sizes = [3008,704,1856,576,1632,672,832,1856,1120,2656,1216,672,
             448,992,2400,1376,2688,2656,736,1440];
@@ -410,14 +410,14 @@ struct FreeTree(ParentAllocator)
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator;
+    import stdx.allocator.gc_allocator;
     testAllocator!(() => FreeTree!GCAllocator());
 }
 
 @system unittest // issue 16506
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mallocator : Mallocator;
 
     static void f(ParentAllocator)(size_t sz)
     {

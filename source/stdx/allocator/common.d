@@ -1,11 +1,11 @@
 /**
-Utility and ancillary artifacts of `std.experimental.allocator`. This module
+Utility and ancillary artifacts of `stdx.allocator`. This module
 shouldn't be used directly; its functionality will be migrated into more
 appropriate parts of `std`.
 
 Authors: $(HTTP erdani.com, Andrei Alexandrescu), Timon Gehr (`Ternary`)
 */
-module std.experimental.allocator.common;
+module stdx.allocator.common;
 import std.algorithm.comparison, std.traits;
 
 /**
@@ -419,7 +419,7 @@ Forwards each of the methods in `funs` (if defined) to `member`.
 
 version(unittest)
 {
-    import std.experimental.allocator : IAllocator, ISharedAllocator;
+    import stdx.allocator : IAllocator, ISharedAllocator;
 
     package void testAllocator(alias make)()
     {

@@ -1,6 +1,6 @@
 ///
-module std.experimental.allocator.gc_allocator;
-import std.experimental.allocator.common;
+module stdx.allocator.gc_allocator;
+import stdx.allocator.common;
 
 /**
 D's built-in garbage-collected allocator.

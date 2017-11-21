@@ -5,11 +5,11 @@ components. User code would typically import this module and use its
 facilities, or import individual heap building blocks and assemble them.
 
 */
-module std.experimental.allocator.showcase;
+module stdx.allocator.showcase;
 
-import std.experimental.allocator.building_blocks.fallback_allocator,
-    std.experimental.allocator.gc_allocator,
-    std.experimental.allocator.building_blocks.region;
+import stdx.allocator.building_blocks.fallback_allocator,
+    stdx.allocator.gc_allocator,
+    stdx.allocator.building_blocks.region;
 import std.traits : hasMember;
 
 /**
@@ -62,9 +62,9 @@ auto mmapRegionList(size_t bytesPerRegion)
     {
         size_t bytesPerRegion;
         import std.algorithm.comparison : max;
-        import std.experimental.allocator.building_blocks.region
+        import stdx.allocator.building_blocks.region
             : Region;
-        import std.experimental.allocator.mmap_allocator
+        import stdx.allocator.mmap_allocator
             : MmapAllocator;
         this(size_t n)
         {
@@ -75,9 +75,9 @@ auto mmapRegionList(size_t bytesPerRegion)
             return Region!MmapAllocator(max(n, bytesPerRegion));
         }
     }
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.building_blocks.null_allocator
+    import stdx.allocator.building_blocks.null_allocator
         : NullAllocator;
     auto shop = Factory(bytesPerRegion);
     return AllocatorList!(Factory, NullAllocator)(shop);

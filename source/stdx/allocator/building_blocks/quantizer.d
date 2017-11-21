@@ -1,7 +1,7 @@
 ///
-module std.experimental.allocator.building_blocks.quantizer;
+module stdx.allocator.building_blocks.quantizer;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 
 /**
 This allocator sits on top of $(D ParentAllocator) and quantizes allocation
@@ -211,8 +211,8 @@ struct Quantizer(ParentAllocator, alias roundingFunction)
 ///
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.free_tree : FreeTree;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.free_tree : FreeTree;
+    import stdx.allocator.gc_allocator : GCAllocator;
 
     size_t roundUpToMultipleOf(size_t s, uint base)
     {
@@ -232,7 +232,7 @@ struct Quantizer(ParentAllocator, alias roundingFunction)
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     alias MyAlloc = Quantizer!(GCAllocator,
         (size_t n) => n.roundUpToMultipleOf(64));
     testAllocator!(() => MyAlloc());

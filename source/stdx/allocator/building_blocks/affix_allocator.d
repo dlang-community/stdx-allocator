@@ -1,5 +1,5 @@
 ///
-module std.experimental.allocator.building_blocks.affix_allocator;
+module stdx.allocator.building_blocks.affix_allocator;
 
 /**
 
@@ -21,8 +21,8 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 {
     import std.algorithm.comparison : min;
     import std.conv : emplace;
-    import std.experimental.allocator : IAllocator, theAllocator;
-    import std.experimental.allocator.common : stateSize, forwardToMember,
+    import stdx.allocator : IAllocator, theAllocator;
+    import stdx.allocator.common : stateSize, forwardToMember,
         roundUpToMultipleOf, alignedAt, alignDownTo, roundUpToMultipleOf,
         hasStaticallyKnownAlignment;
     import std.math : isPowerOf2;
@@ -90,7 +90,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 
         size_t goodAllocSize(size_t s)
         {
-            import std.experimental.allocator.common : goodAllocSize;
+            import stdx.allocator.common : goodAllocSize;
             auto a = actualAllocationSize(s);
             return roundUpToMultipleOf(parent.goodAllocSize(a)
                     - stateSize!Prefix - stateSize!Suffix,
@@ -358,7 +358,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 ///
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     // One word before and after each allocation.
     alias A = AffixAllocator!(Mallocator, size_t, size_t);
     auto b = A.instance.allocate(11);
@@ -370,8 +370,8 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator : theAllocator, IAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator : theAllocator, IAllocator;
 
     // One word before and after each allocation.
     auto A = AffixAllocator!(IAllocator, size_t, size_t)(theAllocator);
@@ -392,9 +392,9 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.bitmapped_block
+    import stdx.allocator.building_blocks.bitmapped_block
         : BitmappedBlock;
-    import std.experimental.allocator.common : testAllocator;
+    import stdx.allocator.common : testAllocator;
     testAllocator!({
         auto a = AffixAllocator!(BitmappedBlock!128, ulong, ulong)
             (BitmappedBlock!128(new ubyte[128 * 4096]));
@@ -404,13 +404,13 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     alias A = AffixAllocator!(Mallocator, size_t);
     auto b = A.instance.allocate(10);
     A.instance.prefix(b) = 10;
     assert(A.instance.prefix(b) == 10);
 
-    import std.experimental.allocator.building_blocks.null_allocator
+    import stdx.allocator.building_blocks.null_allocator
         : NullAllocator;
     alias B = AffixAllocator!(NullAllocator, size_t);
     b = B.instance.allocate(100);
@@ -419,8 +419,8 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 
 @system unittest
 {
-    import std.experimental.allocator;
-    import std.experimental.allocator.gc_allocator;
+    import stdx.allocator;
+    import stdx.allocator.gc_allocator;
     import std.typecons : Ternary;
     alias MyAllocator = AffixAllocator!(GCAllocator, uint);
     auto a = MyAllocator.instance.makeArray!(shared int)(100);

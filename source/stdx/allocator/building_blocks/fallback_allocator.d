@@ -1,7 +1,7 @@
 ///
-module std.experimental.allocator.building_blocks.fallback_allocator;
+module stdx.allocator.building_blocks.fallback_allocator;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 
 /**
 $(D FallbackAllocator) is the allocator equivalent of an "or" operator in
@@ -257,8 +257,8 @@ struct FallbackAllocator(Primary, Fallback)
 @system unittest
 {
     import std.conv : text;
-    import std.experimental.allocator.building_blocks.region : InSituRegion;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.region : InSituRegion;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.typecons : Ternary;
     FallbackAllocator!(InSituRegion!16_384, GCAllocator) a;
     // This allocation uses the stack
@@ -342,8 +342,8 @@ fallbackAllocator(Primary, Fallback)(auto ref Primary p, auto ref Fallback f)
 ///
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.region : Region;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.region : Region;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.typecons : Ternary;
     auto a = fallbackAllocator(Region!GCAllocator(1024), GCAllocator.instance);
     auto b1 = a.allocate(1020);

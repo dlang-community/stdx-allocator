@@ -1,6 +1,6 @@
 ///
-module std.experimental.allocator.mallocator;
-import std.experimental.allocator.common;
+module stdx.allocator.mallocator;
+import stdx.allocator.common;
 
 /**
    The C heap allocator.
@@ -96,7 +96,7 @@ struct Mallocator
 {
     static void test(A)()
     {
-        import std.experimental.allocator : make;
+        import stdx.allocator : make;
         Object p = null;
         p = A.instance.make!Object();
         assert(p !is null);

@@ -1,5 +1,5 @@
 ///
-module std.experimental.allocator.mmap_allocator;
+module stdx.allocator.mmap_allocator;
 
 // MmapAllocator
 /**

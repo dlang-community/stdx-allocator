@@ -107,11 +107,11 @@ std,experimental,_allocator,mmap_allocator)). Most custom allocators would
 ultimately obtain memory from one of these core allocators.)
 )
 
-$(H2 Idiomatic Use of $(D std.experimental._allocator))
+$(H2 Idiomatic Use of $(D stdx._allocator))
 
-As of this time, $(D std.experimental._allocator) is not integrated with D's
+As of this time, $(D stdx._allocator) is not integrated with D's
 built-in operators that allocate memory, such as `new`, array literals, or
-array concatenation operators. That means $(D std.experimental._allocator) is
+array concatenation operators. That means $(D stdx._allocator) is
 opt-in$(MDASH)applications need to make explicit use of it.
 
 For casual creation and disposal of dynamically-allocated objects, use $(LREF
@@ -141,7 +141,7 @@ To install one in `main`, the application would use:
 ----
 void main()
 {
-    import std.experimental.allocator.building_blocks.free_list
+    import stdx.allocator.building_blocks.free_list
         : FreeList;
     theAllocator = allocatorObject(FreeList!8());
     ...
@@ -221,23 +221,23 @@ Source: $(PHOBOSSRC std/experimental/_allocator)
 
 */
 
-module std.experimental.allocator;
+module stdx.allocator;
 
-public import std.experimental.allocator.common,
-    std.experimental.allocator.typed;
+public import stdx.allocator.common,
+    stdx.allocator.typed;
 
 // Example in the synopsis above
 @system unittest
 {
     import std.algorithm.comparison : min, max;
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.building_blocks.bitmapped_block
+    import stdx.allocator.building_blocks.bitmapped_block
         : BitmappedBlock;
-    import std.experimental.allocator.building_blocks.bucketizer : Bucketizer;
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.building_blocks.segregator : Segregator;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.bucketizer : Bucketizer;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.building_blocks.segregator : Segregator;
+    import stdx.allocator.gc_allocator : GCAllocator;
 
     alias FList = FreeList!(GCAllocator, 0, unbounded);
     alias A = Segregator!(
@@ -277,7 +277,7 @@ Composition of allocators is not recommended at this level due to
 inflexibility of dynamic interfaces and inefficiencies caused by cascaded
 multiple calls. Instead, compose allocators using the static interface defined
 in $(A std_experimental_allocator_building_blocks.html,
-`std.experimental.allocator.building_blocks`), then adapt the composed
+`stdx.allocator.building_blocks`), then adapt the composed
 allocator to `IAllocator` (possibly by using $(LREF CAllocatorImpl) below).
 
 Methods returning $(D Ternary) return $(D Ternary.yes) upon success,
@@ -373,7 +373,7 @@ Composition of allocators is not recommended at this level due to
 inflexibility of dynamic interfaces and inefficiencies caused by cascaded
 multiple calls. Instead, compose allocators using the static interface defined
 in $(A std_experimental_allocator_building_blocks.html,
-`std.experimental.allocator.building_blocks`), then adapt the composed
+`stdx.allocator.building_blocks`), then adapt the composed
 allocator to `ISharedAllocator` (possibly by using $(LREF CSharedAllocatorImpl) below).
 
 Methods returning $(D Ternary) return $(D Ternary.yes) upon success,
@@ -566,8 +566,8 @@ nothrow @safe @nogc @property void theAllocator(IAllocator a)
 @system unittest
 {
     // Install a new allocator that is faster for 128-byte allocations.
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.gc_allocator : GCAllocator;
     auto oldAllocator = theAllocator;
     scope(exit) theAllocator = oldAllocator;
     theAllocator = allocatorObject(FreeList!(GCAllocator, 128)());
@@ -584,7 +584,7 @@ allocator can be cast to $(D shared).
 */
 @property shared(ISharedAllocator) processAllocator()
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.concurrency : initOnce;
     return initOnce!_processAllocator(
         sharedAllocatorObject(GCAllocator.instance));
@@ -601,8 +601,8 @@ allocator can be cast to $(D shared).
 {
     import core.exception : AssertError;
     import std.exception : assertThrown;
-    import std.experimental.allocator.building_blocks.free_list : SharedFreeList;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.building_blocks.free_list : SharedFreeList;
+    import stdx.allocator.mallocator : Mallocator;
 
     assert(processAllocator);
     assert(theAllocator);
@@ -804,7 +804,7 @@ auto make(T, Allocator, A...)(auto ref Allocator alloc, auto ref A args)
         assert((*parray).empty);
     }
 
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     test(GCAllocator.instance);
     test(theAllocator);
 }
@@ -812,7 +812,7 @@ auto make(T, Allocator, A...)(auto ref Allocator alloc, auto ref A args)
 // Attribute propagation
 nothrow @safe @nogc unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     alias alloc = Mallocator.instance;
 
     void test(T, Args...)(auto ref Args args)
@@ -830,7 +830,7 @@ nothrow @safe @nogc unittest
 // should be pure with the GCAllocator
 /*pure nothrow*/ @safe unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
 
     alias alloc = GCAllocator.instance;
 
@@ -849,7 +849,7 @@ nothrow @safe @nogc unittest
 // Verify that making an object by calling an impure constructor is not @safe
 nothrow @safe @nogc unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     static struct Pure { this(int) pure nothrow @nogc @safe {} }
 
     cast(void) Mallocator.instance.make!Pure(0);
@@ -874,7 +874,7 @@ nothrow @safe @nogc unittest
             enforce(1 == 2);
         }
     }
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     assertThrown(make!InvalidStruct(Mallocator.instance, 42));
 }
 
@@ -891,7 +891,7 @@ nothrow @safe @nogc unittest
             enforce(1 == 2);
         }
     }
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     assertThrown(make!InvalidImpureStruct(Mallocator.instance, 42));
 }
 
@@ -995,8 +995,8 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length)
         assert(arrInt == res);
     }
 
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mallocator : Mallocator;
     (alloc) /*pure nothrow*/ @safe { test1(alloc); test2(alloc);} (GCAllocator.instance);
     (alloc) nothrow @safe @nogc { test1(alloc); test2(alloc);} (Mallocator.instance);
     test2(theAllocator);
@@ -1104,7 +1104,7 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
         assert(a.length == 5);
         assert(a == [ 42, 42, 42, 42, 42 ]);
     }
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     (alloc) /*pure nothrow*/ @safe { test(alloc); } (GCAllocator.instance);
     test(theAllocator);
 }
@@ -1126,7 +1126,7 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
             enforce(1 == 2);
         }
     }
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     assertThrown(makeArray!NoCopy(Mallocator.instance, 10, NoCopy(42)));
 }
 
@@ -1153,7 +1153,7 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
             i--;
         }
     }
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     assertThrown(makeArray!Singleton(Mallocator.instance, 10, Singleton(42)));
 }
 
@@ -1287,7 +1287,7 @@ if (isInputRange!R && !isInfinite!R)
         static assert(is(typeof(b) == double[]));
         assert(b == [4.0, 2.0]);
     }
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     (alloc) pure nothrow @safe { test(alloc); } (GCAllocator.instance);
     test(theAllocator);
 }
@@ -1310,7 +1310,7 @@ if (isInputRange!R && !isInfinite!R)
         assert(w == "fooπ😜");
     }
 
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     (alloc) pure nothrow @safe { test(alloc); } (GCAllocator.instance);
     test(theAllocator);
 }
@@ -1318,7 +1318,7 @@ if (isInputRange!R && !isInfinite!R)
 /*pure*/ nothrow @safe unittest
 {
     import std.algorithm.comparison : equal;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.internal.test.dummyrange;
     import std.range : iota;
     foreach (DummyType; AllDummyRanges)
@@ -1355,7 +1355,7 @@ if (isInputRange!R && !isInfinite!R)
             enforce(b < 3, "there can only be three elements");
         }
     }
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     auto arr = [NoCopy(1), NoCopy(2), NoCopy(3)];
     assertThrown(makeArray!NoCopy(Mallocator.instance, arr));
 
@@ -1403,7 +1403,7 @@ if (isInputRange!R && !isInfinite!R)
         }
     }
 
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     auto arr = [NoCopy(1), NoCopy(2)];
     assertThrown(makeArray!NoCopy(Mallocator.instance, arr));
 
@@ -1469,7 +1469,7 @@ version(unittest)
         assert(a.length == 10);
         assert(a == iota(10).array);
     }
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     (alloc) pure nothrow @safe { test(alloc); } (GCAllocator.instance);
     test(theAllocator);
 }
@@ -1519,7 +1519,7 @@ bool expandArray(T, Allocator)(auto ref Allocator alloc, ref T[] array,
         assert(alloc.expandArray(arr, 3));
         assert(arr == [1, 2, 3, 0, 0, 0]);
     }
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     test(GCAllocator.instance);
     test(theAllocator);
 }
@@ -1548,7 +1548,7 @@ bool expandArray(T, Allocator)(auto ref Allocator alloc, ref T[] array,
         assert(alloc.expandArray(arr, 3, 1));
         assert(arr == [1, 2, 3, 1, 1, 1]);
     }
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     test(GCAllocator.instance);
     test(theAllocator);
 }
@@ -1718,7 +1718,7 @@ bool shrinkArray(T, Allocator)(auto ref Allocator alloc,
         assert(a.length == 2);
         assert(a == [ 42, 42]);
     }
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     test(GCAllocator.instance);
     test(theAllocator);
 }
@@ -1821,7 +1821,7 @@ void dispose(A, T)(auto ref A alloc, auto ref T[] array)
 
 @system unittest //bugzilla 16512
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
 
     int* i = Mallocator.instance.make!int(0);
     Mallocator.instance.dispose(i);
@@ -1842,7 +1842,7 @@ void dispose(A, T)(auto ref A alloc, auto ref T[] array)
 
 @system unittest //bugzilla 15721
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
 
     interface Foo {}
     class Bar: Foo {}
@@ -1885,7 +1885,7 @@ auto makeMultidimensionalArray(T, Allocator, size_t N)(auto ref Allocator alloc,
 ///
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
 
     auto mArray = Mallocator.instance.makeMultidimensionalArray!int(2, 3, 6);
 
@@ -1931,8 +1931,8 @@ void disposeMultidimensionalArray(T, Allocator)(auto ref Allocator alloc, auto r
 {
     struct TestAllocator
     {
-        import std.experimental.allocator.common : platformAlignment;
-        import std.experimental.allocator.mallocator : Mallocator;
+        import stdx.allocator.common : platformAlignment;
+        import stdx.allocator.mallocator : Mallocator;
 
         alias allocator = Mallocator.instance;
 
@@ -2058,14 +2058,14 @@ CAllocatorImpl!(A, Yes.indirect) allocatorObject(A)(A* pa)
 ///
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     IAllocator a = allocatorObject(Mallocator.instance);
     auto b = a.allocate(100);
     assert(b.length == 100);
     assert(a.deallocate(b));
 
     // The in-situ region must be used by pointer
-    import std.experimental.allocator.building_blocks.region : InSituRegion;
+    import stdx.allocator.building_blocks.region : InSituRegion;
     auto r = InSituRegion!1024();
     a = allocatorObject(&r);
     b = a.allocate(200);
@@ -2995,7 +2995,7 @@ unittest
         GCAllocator
     );
 
-    import std.datetime, std.experimental.allocator.null_allocator;
+    import std.datetime, stdx.allocator.null_allocator;
     if (false) writeln(benchmark!(
         testSpeed!NullAllocator,
         testSpeed!Mallocator,

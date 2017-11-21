@@ -198,7 +198,7 @@ $(H2 Building Blocks)
 
 $(P The table below gives a synopsis of predefined allocator building blocks,
 with their respective modules. Either `import` the needed modules individually,
-or `import` `std.experimental.building_blocks`, which imports them all
+or `import` `stdx.building_blocks`, which imports them all
 `public`ly. The building blocks can be assembled in unbounded ways and also
 combined with your own. For a collection of typical and useful preassembled
 allocators and for inspiration in defining more such assemblies, refer to
@@ -285,29 +285,29 @@ MYREF2 = $(REF_SHORT $1, std,experimental,allocator,building_blocks,$2)
 MYREF3 = $(REF_SHORT $1, std,experimental,allocator,$2)
 TDC = $(TDNW $(D $1)$+)
 TDC2 = $(TDNW $(D $(MYREF2 $1,$+))$(BR)$(SMALL
-$(D std.experimental.allocator.building_blocks.$2)))
+$(D stdx.allocator.building_blocks.$2)))
 TDC3 = $(TDNW $(D $(MYREF3 $1,$+))$(BR)$(SMALL
-$(D std.experimental.allocator.$2)))
+$(D stdx.allocator.$2)))
 RES = $(I result)
 POST = $(BR)$(SMALL $(I Post:) $(BLUE $(D $0)))
 */
 
-module std.experimental.allocator.building_blocks;
+module stdx.allocator.building_blocks;
 
 public import
-    std.experimental.allocator.building_blocks.affix_allocator,
-    std.experimental.allocator.building_blocks.allocator_list,
-    std.experimental.allocator.building_blocks.bucketizer,
-    std.experimental.allocator.building_blocks.fallback_allocator,
-    std.experimental.allocator.building_blocks.free_list,
-    std.experimental.allocator.building_blocks.free_tree,
-    std.experimental.allocator.gc_allocator,
-    std.experimental.allocator.building_blocks.bitmapped_block,
-    std.experimental.allocator.building_blocks.kernighan_ritchie,
-    std.experimental.allocator.mallocator,
-    std.experimental.allocator.mmap_allocator,
-    std.experimental.allocator.building_blocks.null_allocator,
-    std.experimental.allocator.building_blocks.quantizer,
-    std.experimental.allocator.building_blocks.region,
-    std.experimental.allocator.building_blocks.segregator,
-    std.experimental.allocator.building_blocks.stats_collector;
+    stdx.allocator.building_blocks.affix_allocator,
+    stdx.allocator.building_blocks.allocator_list,
+    stdx.allocator.building_blocks.bucketizer,
+    stdx.allocator.building_blocks.fallback_allocator,
+    stdx.allocator.building_blocks.free_list,
+    stdx.allocator.building_blocks.free_tree,
+    stdx.allocator.gc_allocator,
+    stdx.allocator.building_blocks.bitmapped_block,
+    stdx.allocator.building_blocks.kernighan_ritchie,
+    stdx.allocator.mallocator,
+    stdx.allocator.mmap_allocator,
+    stdx.allocator.building_blocks.null_allocator,
+    stdx.allocator.building_blocks.quantizer,
+    stdx.allocator.building_blocks.region,
+    stdx.allocator.building_blocks.segregator,
+    stdx.allocator.building_blocks.stats_collector;

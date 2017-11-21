@@ -1,8 +1,8 @@
 ///
-module std.experimental.allocator.building_blocks.bitmapped_block;
+module stdx.allocator.building_blocks.bitmapped_block;
 
-import std.experimental.allocator.building_blocks.null_allocator;
-import std.experimental.allocator.common;
+import stdx.allocator.building_blocks.null_allocator;
+import stdx.allocator.common;
 
 /**
 
@@ -53,7 +53,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     @system unittest
     {
         import std.algorithm.comparison : max;
-        import std.experimental.allocator.mallocator : AlignedMallocator;
+        import stdx.allocator.mallocator : AlignedMallocator;
         auto m = cast(ubyte[])(AlignedMallocator.instance.alignedAllocate(1024 * 64,
                                 max(theAlignment, cast(uint) size_t.sizeof)));
         scope(exit) AlignedMallocator.instance.deallocate(m);
@@ -693,7 +693,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 @system unittest
 {
     // Create a block allocator on top of a 10KB stack region.
-    import std.experimental.allocator.building_blocks.region : InSituRegion;
+    import stdx.allocator.building_blocks.region : InSituRegion;
     import std.traits : hasMember;
     InSituRegion!(10_240, 64) r;
     auto a = BitmappedBlock!(64, 64)(cast(ubyte[])(r.allocateAll()));
@@ -704,7 +704,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     testAllocator!(() => BitmappedBlock!(64, 8, GCAllocator)(1024 * 64));
 }
 
@@ -714,7 +714,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     {
         import std.algorithm.comparison : min;
         assert(bs);
-        import std.experimental.allocator.gc_allocator : GCAllocator;
+        import stdx.allocator.gc_allocator : GCAllocator;
         auto a = BitmappedBlock!(bs, min(bs, platformAlignment))(
             cast(ubyte[])(GCAllocator.instance.allocate((blocks * bs * 8 +
                         blocks) / 8))
@@ -863,7 +863,7 @@ struct BitmappedBlockWithInternalPointers(
     import std.typecons : Ternary;
     @system unittest
     {
-        import std.experimental.allocator.mallocator : AlignedMallocator;
+        import stdx.allocator.mallocator : AlignedMallocator;
         auto m = cast(ubyte[])(AlignedMallocator.instance.alignedAllocate(1024 * 64,
             theAlignment));
         scope(exit) AlignedMallocator.instance.deallocate(m);

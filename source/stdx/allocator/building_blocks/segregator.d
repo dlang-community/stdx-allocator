@@ -1,7 +1,7 @@
 ///
-module std.experimental.allocator.building_blocks.segregator;
+module stdx.allocator.building_blocks.segregator;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 
 /**
 Dispatches allocations (and deallocations) between two allocators ($(D
@@ -276,9 +276,9 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
 ///
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mallocator : Mallocator;
     alias A =
         Segregator!(
             1024 * 4,
@@ -344,9 +344,9 @@ if (Args.length > 3)
 ///
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mallocator : Mallocator;
     alias A =
         Segregator!(
             128, FreeList!(Mallocator, 0, 128),

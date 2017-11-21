@@ -1,9 +1,9 @@
 ///
-module std.experimental.allocator.building_blocks.allocator_list;
+module stdx.allocator.building_blocks.allocator_list;
 
-import std.experimental.allocator.building_blocks.null_allocator;
-import std.experimental.allocator.common;
-import std.experimental.allocator.gc_allocator;
+import stdx.allocator.building_blocks.null_allocator;
+import stdx.allocator.common;
+import stdx.allocator.gc_allocator;
 version(unittest) import std.stdio;
 
 // Turn this on for debugging
@@ -65,7 +65,7 @@ called `factory`.
 struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
 {
     import std.conv : emplace;
-    import std.experimental.allocator.building_blocks.stats_collector
+    import stdx.allocator.building_blocks.stats_collector
         : StatsCollector, Options;
     import std.traits : hasMember;
     import std.typecons : Ternary;
@@ -536,12 +536,12 @@ template AllocatorList(alias factoryFunction,
 version(Posix) @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.free_list : ContiguousFreeList;
-    import std.experimental.allocator.building_blocks.null_allocator : NullAllocator;
-    import std.experimental.allocator.building_blocks.region : Region;
-    import std.experimental.allocator.building_blocks.segregator : Segregator;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mmap_allocator : MmapAllocator;
+    import stdx.allocator.building_blocks.free_list : ContiguousFreeList;
+    import stdx.allocator.building_blocks.null_allocator : NullAllocator;
+    import stdx.allocator.building_blocks.region : Region;
+    import stdx.allocator.building_blocks.segregator : Segregator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mmap_allocator : MmapAllocator;
 
     // Ouroboros allocator list based upon 4MB regions, fetched directly from
     // mmap. All memory is released upon destruction.
@@ -580,7 +580,7 @@ version(Posix) @system unittest
 {
     // Create an allocator based upon 4MB regions, fetched from the GC heap.
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.region : Region;
+    import stdx.allocator.building_blocks.region : Region;
     AllocatorList!((n) => Region!GCAllocator(new ubyte[max(n, 1024 * 4096)]),
         NullAllocator) a;
     const b1 = a.allocate(1024 * 8192);
@@ -594,7 +594,7 @@ version(Posix) @system unittest
 {
     // Create an allocator based upon 4MB regions, fetched from the GC heap.
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.region : Region;
+    import stdx.allocator.building_blocks.region : Region;
     AllocatorList!((n) => Region!()(new ubyte[max(n, 1024 * 4096)])) a;
     auto b1 = a.allocate(1024 * 8192);
     assert(b1 !is null); // still works due to overdimensioning
@@ -606,7 +606,7 @@ version(Posix) @system unittest
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.region : Region;
+    import stdx.allocator.building_blocks.region : Region;
     import std.typecons : Ternary;
     AllocatorList!((n) => Region!()(new ubyte[max(n, 1024 * 4096)])) a;
     auto b1 = a.allocate(1024 * 8192);
@@ -620,7 +620,7 @@ version(Posix) @system unittest
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.region : Region;
+    import stdx.allocator.building_blocks.region : Region;
     enum bs = GCAllocator.alignment;
     AllocatorList!((n) => Region!GCAllocator(256 * bs)) a;
     auto b1 = a.allocate(192 * bs);

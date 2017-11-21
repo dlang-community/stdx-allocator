@@ -1,6 +1,6 @@
 ///
-module std.experimental.allocator.building_blocks.kernighan_ritchie;
-import std.experimental.allocator.building_blocks.null_allocator;
+module stdx.allocator.building_blocks.kernighan_ritchie;
+import stdx.allocator.building_blocks.null_allocator;
 
 //debug = KRRegion;
 version(unittest) import std.conv : text;
@@ -95,7 +95,7 @@ information is available in client code at deallocation time.)
 */
 struct KRRegion(ParentAllocator = NullAllocator)
 {
-    import std.experimental.allocator.common : stateSize, alignedAt;
+    import stdx.allocator.common : stateSize, alignedAt;
     import std.traits : hasMember;
     import std.typecons : Ternary;
 
@@ -547,7 +547,7 @@ struct KRRegion(ParentAllocator = NullAllocator)
     ///
     @system unittest
     {
-        import std.experimental.allocator.gc_allocator : GCAllocator;
+        import stdx.allocator.gc_allocator : GCAllocator;
         auto alloc = KRRegion!GCAllocator(1024 * 64);
         const b1 = alloc.allocate(2048);
         assert(b1.length == 2048);
@@ -592,7 +592,7 @@ struct KRRegion(ParentAllocator = NullAllocator)
     */
     static size_t goodAllocSize(size_t n)
     {
-        import std.experimental.allocator.common : roundUpToMultipleOf;
+        import stdx.allocator.common : roundUpToMultipleOf;
         return n <= Node.sizeof
             ? Node.sizeof : n.roundUpToMultipleOf(alignment);
     }
@@ -615,9 +615,9 @@ fronting the GC allocator.
 */
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.fallback_allocator
+    import stdx.allocator.building_blocks.fallback_allocator
         : fallbackAllocator;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.typecons : Ternary;
     // KRRegion fronting a general-purpose allocator
     ubyte[1024 * 128] buf;
@@ -640,20 +640,20 @@ it actually returns memory to the operating system when possible.
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mmap_allocator : MmapAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mmap_allocator : MmapAllocator;
     AllocatorList!(n => KRRegion!MmapAllocator(max(n * 16, 1024 * 1024))) alloc;
 }
 
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mallocator : Mallocator;
     import std.typecons : Ternary;
     /*
     Create a scalable allocator consisting of 1 MB (or larger) blocks fetched
@@ -683,10 +683,10 @@ it actually returns memory to the operating system when possible.
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
-    import std.experimental.allocator.mmap_allocator : MmapAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.mmap_allocator : MmapAllocator;
     import std.typecons : Ternary;
     /*
     Create a scalable allocator consisting of 1 MB (or larger) blocks fetched
@@ -721,17 +721,17 @@ it actually returns memory to the operating system when possible.
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.common : testAllocator;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.common : testAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     testAllocator!(() => AllocatorList!(
         n => KRRegion!GCAllocator(max(n * 16, 1024 * 1024)))());
 }
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
 
     auto alloc = KRRegion!GCAllocator(1024 * 1024);
 
@@ -749,7 +749,7 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.typecons : Ternary;
     auto alloc = KRRegion!()(
                     cast(ubyte[])(GCAllocator.instance.allocate(1024 * 1024)));
@@ -783,7 +783,7 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     auto alloc = KRRegion!()(
                     cast(ubyte[])(GCAllocator.instance.allocate(1024 * 1024)));
     auto p = alloc.allocateAll();
@@ -795,7 +795,7 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks;
+    import stdx.allocator.building_blocks;
     import std.random;
     import std.typecons : Ternary;
 
@@ -837,7 +837,7 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks;
+    import stdx.allocator.building_blocks;
     import std.random;
     import std.typecons : Ternary;
 

@@ -1,5 +1,5 @@
 ///
-module std.experimental.allocator.building_blocks.bucketizer;
+module stdx.allocator.building_blocks.bucketizer;
 
 /**
 
@@ -17,7 +17,7 @@ for $(D Bucketizer). To handle them separately, $(D Segregator) may be of use.
 */
 struct Bucketizer(Allocator, size_t min, size_t max, size_t step)
 {
-    import common = std.experimental.allocator.common : roundUpToMultipleOf;
+    import common = stdx.allocator.common : roundUpToMultipleOf;
     import std.traits : hasMember;
     import std.typecons : Ternary;
 
@@ -221,11 +221,11 @@ struct Bucketizer(Allocator, size_t min, size_t max, size_t step)
 @system unittest
 {
     import std.algorithm.comparison : max;
-    import std.experimental.allocator.building_blocks.allocator_list : AllocatorList;
-    import std.experimental.allocator.building_blocks.free_list : FreeList;
-    import std.experimental.allocator.building_blocks.region : Region;
-    import std.experimental.allocator.common : unbounded;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.building_blocks.allocator_list : AllocatorList;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    import stdx.allocator.building_blocks.region : Region;
+    import stdx.allocator.common : unbounded;
+    import stdx.allocator.mallocator : Mallocator;
     import std.typecons : Ternary;
     Bucketizer!(
         FreeList!(

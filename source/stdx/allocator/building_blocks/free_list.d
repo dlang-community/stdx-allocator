@@ -1,7 +1,7 @@
 ///
-module std.experimental.allocator.building_blocks.free_list;
+module stdx.allocator.building_blocks.free_list;
 
-import std.experimental.allocator.common;
+import stdx.allocator.common;
 import std.typecons : Flag, Yes, No;
 
 /**
@@ -116,8 +116,8 @@ struct FreeList(ParentAllocator,
 
         @system unittest
         {
-            import std.experimental.allocator.common : chooseAtRuntime;
-            import std.experimental.allocator.mallocator : Mallocator;
+            import stdx.allocator.common : chooseAtRuntime;
+            import stdx.allocator.mallocator : Mallocator;
 
             FreeList!(Mallocator, chooseAtRuntime, chooseAtRuntime) a;
             a.min = 64;
@@ -390,7 +390,7 @@ struct FreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     FreeList!(GCAllocator, 0, 8) fl;
     assert(fl.root is null);
     auto b1 = fl.allocate(7);
@@ -425,9 +425,9 @@ available for $(D ContiguousFreeList).
 struct ContiguousFreeList(ParentAllocator,
      size_t minSize, size_t maxSize = minSize)
 {
-    import std.experimental.allocator.building_blocks.null_allocator
+    import stdx.allocator.building_blocks.null_allocator
         : NullAllocator;
-    import std.experimental.allocator.building_blocks.stats_collector
+    import stdx.allocator.building_blocks.stats_collector
         : StatsCollector, Options;
     import std.traits : hasMember;
     import std.typecons : Ternary;
@@ -672,11 +672,11 @@ struct ContiguousFreeList(ParentAllocator,
 ///
 @safe unittest
 {
-    import std.experimental.allocator.building_blocks.allocator_list
+    import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
 
-    import std.experimental.allocator.common : unbounded;
+    import stdx.allocator.common : unbounded;
 
     alias ScalableFreeList = AllocatorList!((n) =>
         ContiguousFreeList!(GCAllocator, 0, unbounded)(4096)
@@ -685,7 +685,7 @@ struct ContiguousFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.null_allocator
+    import stdx.allocator.building_blocks.null_allocator
         : NullAllocator;
     import std.typecons : Ternary;
     alias A = ContiguousFreeList!(NullAllocator, 0, 64);
@@ -710,8 +710,8 @@ struct ContiguousFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.region : Region;
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.region : Region;
+    import stdx.allocator.gc_allocator : GCAllocator;
     import std.typecons : Ternary;
     alias A = ContiguousFreeList!(Region!GCAllocator, 0, 64);
     auto a = A(Region!GCAllocator(1024 * 4), 1024);
@@ -737,7 +737,7 @@ struct ContiguousFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
     alias A = ContiguousFreeList!(GCAllocator, 64, 64);
     auto a = A(1024);
     const b = a.allocate(100);
@@ -1044,8 +1044,8 @@ struct SharedFreeList(ParentAllocator,
 ///
 @safe unittest
 {
-    import std.experimental.allocator.common : chooseAtRuntime;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.common : chooseAtRuntime;
+    import stdx.allocator.mallocator : Mallocator;
 
     shared SharedFreeList!(Mallocator, chooseAtRuntime, chooseAtRuntime) a;
     a.setBounds(64, 128);
@@ -1056,8 +1056,8 @@ struct SharedFreeList(ParentAllocator,
 ///
 @safe unittest
 {
-    import std.experimental.allocator.common : chooseAtRuntime;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.common : chooseAtRuntime;
+    import stdx.allocator.mallocator : Mallocator;
 
     shared SharedFreeList!(Mallocator, 50, 50, chooseAtRuntime) a;
     // Set the maxSize first so setting the minSize doesn't throw
@@ -1073,7 +1073,7 @@ struct SharedFreeList(ParentAllocator,
 {
     import core.thread : ThreadGroup;
     import std.algorithm.comparison : equal;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     import std.range : repeat;
 
     static shared SharedFreeList!(Mallocator, 64, 128, 10) a;
@@ -1103,7 +1103,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     static shared SharedFreeList!(Mallocator, 64, 128, 10) a;
     auto b = a.allocate(100);
     a.deallocate(b);
@@ -1115,7 +1115,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     static shared SharedFreeList!(Mallocator, 64, 128, 10) a;
     auto b = a.allocate(100);
     auto c = a.allocate(100);
@@ -1133,7 +1133,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     static shared SharedFreeList!(Mallocator, 64, 128, 10) a;
     auto b = a.allocate(100);
     auto c = a.allocate(100);
@@ -1149,7 +1149,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     shared SharedFreeList!(Mallocator, chooseAtRuntime, chooseAtRuntime) a;
     scope(exit) a.deallocateAll();
     auto c = a.allocate(64);
@@ -1160,7 +1160,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     shared SharedFreeList!(Mallocator, chooseAtRuntime, chooseAtRuntime, chooseAtRuntime) a;
     scope(exit) a.deallocateAll;
     a.allocate(64);
@@ -1168,7 +1168,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     shared SharedFreeList!(Mallocator, 30, 40) a;
     scope(exit) a.deallocateAll;
     a.allocate(64);
@@ -1176,7 +1176,7 @@ struct SharedFreeList(ParentAllocator,
 
 @system unittest
 {
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     shared SharedFreeList!(Mallocator, 30, 40, chooseAtRuntime) a;
     scope(exit) a.deallocateAll;
     a.allocate(64);
@@ -1185,7 +1185,7 @@ struct SharedFreeList(ParentAllocator,
 @system unittest
 {
     // Pull request #5556
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     shared SharedFreeList!(Mallocator, 0, chooseAtRuntime) a;
     scope(exit) a.deallocateAll;
     a.max = 64;
@@ -1195,7 +1195,7 @@ struct SharedFreeList(ParentAllocator,
 @system unittest
 {
     // Pull request #5556
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator.mallocator : Mallocator;
     shared SharedFreeList!(Mallocator, chooseAtRuntime, 64) a;
     scope(exit) a.deallocateAll;
     a.min = 32;
