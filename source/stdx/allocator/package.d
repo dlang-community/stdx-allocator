@@ -662,7 +662,7 @@ propagates the exception.
 auto make(T, Allocator, A...)(auto ref Allocator alloc, auto ref A args)
 {
     import std.algorithm.comparison : max;
-    import std.conv : emplace, emplaceRef;
+    import stdx.allocator.internal : emplace, emplaceRef;
     auto m = alloc.allocate(max(stateSize!T, 1));
     if (!m.ptr) return null;
 
@@ -1196,7 +1196,7 @@ if (isInputRange!R && !isInfinite!R)
                 alloc.deallocate(m);
         }
 
-        import std.conv : emplaceRef;
+        import stdx.allocator.internal : emplaceRef;
         static if (isNarrowString!R || isRandomAccessRange!R)
         {
             foreach (j; 0 .. range.length)
@@ -1253,7 +1253,7 @@ if (isInputRange!R && !isInfinite!R)
                 }
                 result = () @trusted { return cast(T[]) m; } ();
             }
-            import std.conv : emplaceRef;
+            import stdx.allocator.internal : emplaceRef;
             emplaceRef(result[initialized], range.front);
         }
 
