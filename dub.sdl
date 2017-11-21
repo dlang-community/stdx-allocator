@@ -1,4 +1,4 @@
-name "allocator"
+name "stdx-allocator"
 description "Extracted std.experimental.allocator"
 authors "Team Phobos"
 copyright "Copyright © 2017, Team Phobos"
