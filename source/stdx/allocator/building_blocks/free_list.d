@@ -31,7 +31,7 @@ struct FreeList(ParentAllocator,
     import std.conv : text;
     import std.exception : enforce;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     static assert(minSize != unbounded, "Use minSize = 0 for no low bound.");
     static assert(maxSize >= (void*).sizeof,
@@ -430,7 +430,7 @@ struct ContiguousFreeList(ParentAllocator,
     import stdx.allocator.building_blocks.stats_collector
         : StatsCollector, Options;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     alias Impl = FreeList!(NullAllocator, minSize, maxSize);
     enum unchecked = minSize == 0 && maxSize == unbounded;
@@ -687,7 +687,7 @@ struct ContiguousFreeList(ParentAllocator,
 {
     import stdx.allocator.building_blocks.null_allocator
         : NullAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     alias A = ContiguousFreeList!(NullAllocator, 0, 64);
     auto a = A(new ubyte[1024]);
 
@@ -712,7 +712,7 @@ struct ContiguousFreeList(ParentAllocator,
 {
     import stdx.allocator.building_blocks.region : Region;
     import stdx.allocator.gc_allocator : GCAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     alias A = ContiguousFreeList!(Region!GCAllocator, 0, 64);
     auto a = A(Region!GCAllocator(1024 * 4), 1024);
 

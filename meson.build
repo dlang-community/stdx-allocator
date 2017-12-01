@@ -1,4 +1,4 @@
-project('stdx-allocator', 'd',
+project('allocator', 'd',
     meson_version: '>=0.40',
     license: 'MIT',
     version: '2.77.0'
@@ -43,7 +43,7 @@ src_dir = include_directories('source/')
 #
 # Targets
 #
-allocator_lib = library('stdx-allocator',
+allocator_lib = library('allocator',
         [allocator_src],
         include_directories: [src_dir],
         install: true,
@@ -51,9 +51,9 @@ allocator_lib = library('stdx-allocator',
         soversion: project_soversion
 )
 
-pkgc.generate(name: 'stdx-allocator',
+pkgc.generate(name: 'allocator',
               libraries: [allocator_lib],
-              subdirs: 'd/stdx-allocator',
+              subdirs: 'd/allocator',
               version: project_version,
               description: 'Extracted std.experimental.allocator for usage via DUB.'
 )

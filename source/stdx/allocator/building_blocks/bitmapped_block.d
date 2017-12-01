@@ -47,7 +47,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 {
     import std.conv : text;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     import std.typecons : tuple, Tuple;
 
     @system unittest
@@ -304,7 +304,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     */
     void[] alignedAllocate(size_t n, uint a)
     {
-        import std.math : isPowerOf2;
+        import stdx.allocator.internal : isPowerOf2;
         assert(a.isPowerOf2);
         if (a <= alignment) return allocate(n);
 
@@ -860,7 +860,7 @@ struct BitmappedBlockWithInternalPointers(
     ParentAllocator = NullAllocator)
 {
     import std.conv : text;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     @system unittest
     {
         import stdx.allocator.mallocator : AlignedMallocator;
@@ -1063,7 +1063,7 @@ struct BitmappedBlockWithInternalPointers(
 
 @system unittest
 {
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     auto h = BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024]);
     auto b = h.allocate(123);

@@ -266,7 +266,8 @@ public import stdx.allocator.common,
 
 import std.range.primitives;
 import std.traits;
-import std.typecons;
+import stdx.allocator.internal : Ternary;
+import std.typecons : Flag, Yes, No;
 
 /**
 Dynamic allocator interface. Code that defines allocators ultimately implements

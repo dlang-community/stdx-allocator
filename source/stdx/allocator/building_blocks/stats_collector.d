@@ -159,7 +159,7 @@ struct StatsCollector(Allocator, ulong flags = Options.all,
 {
 private:
     import std.traits : hasMember, Signed;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     static string define(string type, string[] names...)
     {
@@ -665,15 +665,18 @@ public:
     alloc.reallocate(b, 20);
     alloc.deallocate(b);
 
-    import std.file : deleteme, remove;
-    import std.range : walkLength;
-    import std.stdio : File;
+    static if (__VERSION__ >= 2073)
+    {
+        import std.file : deleteme, remove;
+        import std.range : walkLength;
+        import std.stdio : File;
 
-    auto f = deleteme ~ "-dlang.stdx.allocator.stats_collector.txt";
-    scope(exit) remove(f);
-    Allocator.reportPerCallStatistics(File(f, "w"));
-    alloc.reportStatistics(File(f, "a"));
-    assert(File(f).byLine.walkLength == 22);
+        auto f = deleteme ~ "-dlang.stdx.allocator.stats_collector.txt";
+        scope(exit) remove(f);
+        Allocator.reportPerCallStatistics(File(f, "w"));
+        alloc.reportStatistics(File(f, "a"));
+        assert(File(f).byLine.walkLength == 22);
+    }
 }
 
 @system unittest

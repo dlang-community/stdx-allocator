@@ -340,12 +340,15 @@ if (is(T == class))
 
 @nogc pure nothrow @safe unittest
 {
+    static if (__VERSION__ >= 2072)
+    mixin(`
     int var = 6;
     align(__conv_EmplaceTestClass.alignof) ubyte[__traits(classInstanceSize, __conv_EmplaceTestClass)] buf;
     auto support = (() @trusted => cast(__conv_EmplaceTestClass)(buf.ptr))();
     auto k = emplace!__conv_EmplaceTestClass(support, 5, var);
     assert(k.i == 5);
     assert(var == 7);
+    `);
 }
 
 /**
@@ -1285,6 +1288,8 @@ pure nothrow @safe /* @nogc */ unittest
     }
     void[] buf;
 
+    static if (__VERSION__ >= 2072)
+    mixin(`
     static align(A.alignof) byte[__traits(classInstanceSize, A)] sbuf;
     buf = sbuf[];
     auto a = emplace!A(buf, 55);
@@ -1297,6 +1302,180 @@ pure nothrow @safe /* @nogc */ unittest
 
     // need ctor args
     static assert(!is(typeof(emplace!A(buf))));
+    `);
 }
 // Bulk of emplace unittests ends here
 
+static if (__VERSION__ >= 2072)
+{
+    public import std.typecons : Ternary;
+}
+else
+{
+    public import std.experimental.allocator.common : Ternary;
+}
+
+/**
+Check whether a number is an integer power of two.
+
+Note that only positive numbers can be integer powers of two. This
+function always return `false` if `x` is negative or zero.
+
+Params:
+    x = the number to test
+
+Returns:
+    `true` if `x` is an integer power of two.
+*/
+bool isPowerOf2(X)(const X x) pure @safe nothrow @nogc
+if (isNumeric!X)
+{
+    static if (isFloatingPoint!X)
+    {
+        import std.math : frexp;
+        int exp;
+        const X sig = frexp(x, exp);
+
+        return (exp != int.min) && (sig is cast(X) 0.5L);
+    }
+    else
+    {
+        static if (isSigned!X)
+        {
+            auto y = cast(typeof(x + 0))x;
+            return y > 0 && !(y & (y - 1));
+        }
+        else
+        {
+            auto y = cast(typeof(x + 0u))x;
+            return (y & -y) > (y - 1);
+        }
+    }
+}
+///
+@safe unittest
+{
+    import std.math : pow;
+
+    assert( isPowerOf2(1.0L));
+    assert( isPowerOf2(2.0L));
+    assert( isPowerOf2(0.5L));
+    assert( isPowerOf2(pow(2.0L, 96)));
+    assert( isPowerOf2(pow(2.0L, -77)));
+
+    assert(!isPowerOf2(-2.0L));
+    assert(!isPowerOf2(-0.5L));
+    assert(!isPowerOf2(0.0L));
+    assert(!isPowerOf2(4.315));
+    assert(!isPowerOf2(1.0L / 3.0L));
+
+    assert(!isPowerOf2(real.nan));
+    assert(!isPowerOf2(real.infinity));
+}
+///
+@safe unittest
+{
+    assert( isPowerOf2(1));
+    assert( isPowerOf2(2));
+    assert( isPowerOf2(1uL << 63));
+
+    assert(!isPowerOf2(-4));
+    assert(!isPowerOf2(0));
+    assert(!isPowerOf2(1337u));
+}
+
+@safe unittest
+{
+    import std.meta : AliasSeq;
+    import std.math : pow;
+
+    immutable smallP2 = pow(2.0L, -62);
+    immutable bigP2 = pow(2.0L, 50);
+    immutable smallP7 = pow(7.0L, -35);
+    immutable bigP7 = pow(7.0L, 30);
+
+    foreach (X; AliasSeq!(float, double, real))
+    {
+        immutable min_sub = X.min_normal * X.epsilon;
+
+        foreach (x; [smallP2, min_sub, X.min_normal, .25L, 0.5L, 1.0L,
+                              2.0L, 8.0L, pow(2.0L, X.max_exp - 1), bigP2])
+        {
+            assert( isPowerOf2(cast(X) x));
+            assert(!isPowerOf2(cast(X)-x));
+        }
+
+        foreach (x; [0.0L, 3 * min_sub, smallP7, 0.1L, 1337.0L, bigP7, X.max, real.nan, real.infinity])
+        {
+            assert(!isPowerOf2(cast(X) x));
+            assert(!isPowerOf2(cast(X)-x));
+        }
+    }
+
+    foreach (X; AliasSeq!(byte, ubyte, short, ushort, int, uint, long, ulong))
+    {
+        foreach (x; [1, 2, 4, 8, (X.max >>> 1) + 1])
+        {
+            assert( isPowerOf2(cast(X) x));
+            static if (isSigned!X)
+                assert(!isPowerOf2(cast(X)-x));
+        }
+
+        foreach (x; [0, 3, 5, 13, 77, X.min, X.max])
+            assert(!isPowerOf2(cast(X) x));
+    }
+}
+
+/**
+Determines whether `T` is a class nested inside another class
+and that `T.outer` is the implicit reference to the outer class
+(i.e. `outer` has not been used as a field or method name)
+
+Params:
+    T = type to test
+
+Returns:
+`true` if `T` is a class nested inside another, with the conditions described above;
+`false` otherwise
+*/
+template isInnerClass(T)
+    if (is(T == class))
+{
+    import std.meta : staticIndexOf;
+
+    static if (is(typeof(T.outer)))
+        enum isInnerClass = __traits(isSame, typeof(T.outer), __traits(parent, T))
+                         && (staticIndexOf!(__traits(allMembers, T), "outer") == -1);
+    else
+        enum isInnerClass = false;
+}
+
+///
+@safe unittest
+{
+    class C
+    {
+        int outer;
+    }
+    static assert(!isInnerClass!C);
+
+    class Outer1
+    {
+        class Inner1 { }
+        class Inner2
+        {
+            int outer;
+        }
+    }
+    static assert(isInnerClass!(Outer1.Inner1));
+    static assert(!isInnerClass!(Outer1.Inner2));
+
+    static class Outer2
+    {
+        static class Inner
+        {
+            int outer;
+        }
+    }
+    static assert(!isInnerClass!(Outer2.Inner));
+}

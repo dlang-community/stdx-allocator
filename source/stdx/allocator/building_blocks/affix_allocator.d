@@ -25,9 +25,9 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
     import stdx.allocator.common : stateSize, forwardToMember,
         roundUpToMultipleOf, alignedAt, alignDownTo, roundUpToMultipleOf,
         hasStaticallyKnownAlignment;
-    import std.math : isPowerOf2;
+    import stdx.allocator.internal : isPowerOf2;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     static if (hasStaticallyKnownAlignment!Allocator)
     {
@@ -421,7 +421,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
 {
     import stdx.allocator;
     import stdx.allocator.gc_allocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     alias MyAllocator = AffixAllocator!(GCAllocator, uint);
     auto a = MyAllocator.instance.makeArray!(shared int)(100);
     static assert(is(typeof(&MyAllocator.instance.prefix(a)) == shared(uint)*));

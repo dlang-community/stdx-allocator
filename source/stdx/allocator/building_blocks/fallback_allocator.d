@@ -22,7 +22,7 @@ struct FallbackAllocator(Primary, Fallback)
 {
     import std.algorithm.comparison : min;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     @system unittest
     {
@@ -259,7 +259,7 @@ struct FallbackAllocator(Primary, Fallback)
     import std.conv : text;
     import stdx.allocator.building_blocks.region : InSituRegion;
     import stdx.allocator.gc_allocator : GCAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     FallbackAllocator!(InSituRegion!16_384, GCAllocator) a;
     // This allocation uses the stack
     auto b1 = a.allocate(1024);
@@ -344,7 +344,7 @@ fallbackAllocator(Primary, Fallback)(auto ref Primary p, auto ref Fallback f)
 {
     import stdx.allocator.building_blocks.region : Region;
     import stdx.allocator.gc_allocator : GCAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     auto a = fallbackAllocator(Region!GCAllocator(1024), GCAllocator.instance);
     auto b1 = a.allocate(1020);
     assert(b1.length == 1020);

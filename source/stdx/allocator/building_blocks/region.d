@@ -34,7 +34,7 @@ struct Region(ParentAllocator = NullAllocator,
     static assert(ParentAllocator.alignment >= minAlign);
 
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     // state
     /**
@@ -164,7 +164,7 @@ struct Region(ParentAllocator = NullAllocator,
     */
     void[] alignedAllocate(size_t n, uint a)
     {
-        import std.math : isPowerOf2;
+        import stdx.allocator.internal : isPowerOf2;
         assert(a.isPowerOf2);
         static if (growDownwards)
         {
@@ -378,7 +378,7 @@ struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
     import std.algorithm.comparison : max;
     import std.conv : to;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     static assert(minAlign.isGoodStaticAlignment);
     static assert(size >= minAlign);
@@ -595,7 +595,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
         pthread_mutex_t, pthread_mutex_lock, pthread_mutex_unlock,
         PTHREAD_MUTEX_INITIALIZER;
     private static shared pthread_mutex_t sbrkMutex = PTHREAD_MUTEX_INITIALIZER;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     static assert(minAlign.isGoodStaticAlignment);
     static assert(size_t.sizeof == (void*).sizeof);
@@ -767,7 +767,7 @@ version(Posix) @system unittest
 
 version(Posix) @system unittest
 {
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     alias alloc = SbrkRegion!(8).instance;
     auto a = alloc.alignedAllocate(2001, 4096);
     assert(a.length == 2001);

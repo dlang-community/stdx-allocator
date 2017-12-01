@@ -68,7 +68,7 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     import stdx.allocator.building_blocks.stats_collector
         : StatsCollector, Options;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     private enum ouroboros = is(BookkeepingAllocator == NullAllocator);
 
@@ -607,7 +607,7 @@ version(Posix) @system unittest
 {
     import std.algorithm.comparison : max;
     import stdx.allocator.building_blocks.region : Region;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     AllocatorList!((n) => Region!()(new ubyte[max(n, 1024 * 4096)])) a;
     auto b1 = a.allocate(1024 * 8192);
     assert(b1 !is null);

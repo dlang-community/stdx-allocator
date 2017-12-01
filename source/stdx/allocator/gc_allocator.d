@@ -8,7 +8,7 @@ D's built-in garbage-collected allocator.
 struct GCAllocator
 {
     import core.memory : GC;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     @system unittest { testAllocator!(() => GCAllocator.instance); }
 
     /**
@@ -137,7 +137,7 @@ struct GCAllocator
 @system unittest
 {
     import core.memory : GC;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     // test allocation sizes
     assert(GCAllocator.instance.goodAllocSize(1) == 16);

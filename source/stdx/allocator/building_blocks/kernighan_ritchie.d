@@ -97,7 +97,7 @@ struct KRRegion(ParentAllocator = NullAllocator)
 {
     import stdx.allocator.common : stateSize, alignedAt;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     private static struct Node
     {
@@ -618,7 +618,7 @@ fronting the GC allocator.
     import stdx.allocator.building_blocks.fallback_allocator
         : fallbackAllocator;
     import stdx.allocator.gc_allocator : GCAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     // KRRegion fronting a general-purpose allocator
     ubyte[1024 * 128] buf;
     auto alloc = fallbackAllocator(KRRegion!()(buf), GCAllocator.instance);
@@ -654,7 +654,7 @@ it actually returns memory to the operating system when possible.
         : AllocatorList;
     import stdx.allocator.gc_allocator : GCAllocator;
     import stdx.allocator.mallocator : Mallocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     /*
     Create a scalable allocator consisting of 1 MB (or larger) blocks fetched
     from the garbage-collected heap. Each block is organized as a KR-style
@@ -687,7 +687,7 @@ it actually returns memory to the operating system when possible.
         : AllocatorList;
     import stdx.allocator.gc_allocator : GCAllocator;
     import stdx.allocator.mmap_allocator : MmapAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     /*
     Create a scalable allocator consisting of 1 MB (or larger) blocks fetched
     from the garbage-collected heap. Each block is organized as a KR-style
@@ -750,7 +750,7 @@ it actually returns memory to the operating system when possible.
 @system unittest
 {
     import stdx.allocator.gc_allocator : GCAllocator;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
     auto alloc = KRRegion!()(
                     cast(ubyte[])(GCAllocator.instance.allocate(1024 * 1024)));
     const store = alloc.allocate(KRRegion!().sizeof);
@@ -797,7 +797,7 @@ it actually returns memory to the operating system when possible.
 {
     import stdx.allocator.building_blocks;
     import std.random;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     // Both sequences must work on either system
 
@@ -811,35 +811,39 @@ it actually returns memory to the operating system when possible.
     int[] sizes32 = [81412, 107068, 49892, 23768];
 
 
-    void test(int[] sizes)
-    {
-        align(size_t.sizeof) ubyte[256 * 1024] buf;
-        auto a = KRRegion!()(buf);
-
-        void[][] bufs;
-
-        foreach (size; sizes)
+    static if (__VERSION__ >= 2072) {
+        mixin(`
+        void test(int[] sizes)
         {
-            bufs ~= a.allocate(size);
+            align(size_t.sizeof) ubyte[256 * 1024] buf;
+            auto a = KRRegion!()(buf);
+
+            void[][] bufs;
+
+            foreach (size; sizes)
+            {
+                bufs ~= a.allocate(size);
+            }
+
+            foreach (b; bufs.randomCover)
+            {
+                a.deallocate(b);
+            }
+
+            assert(a.empty == Ternary.yes);
         }
 
-        foreach (b; bufs.randomCover)
-        {
-            a.deallocate(b);
-        }
-
-        assert(a.empty == Ternary.yes);
+        test(sizes64);
+        test(sizes32);
+        `);
     }
-
-    test(sizes64);
-    test(sizes32);
 }
 
 @system unittest
 {
     import stdx.allocator.building_blocks;
     import std.random;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     // For 64 bits, we allocate in multiples of 8, but the minimum alloc size is 16.
     // This can create gaps.
@@ -853,30 +857,34 @@ it actually returns memory to the operating system when possible.
     int word64 = 8;
     int word32 = 4;
 
-    void test(int[] sizes, int word)
-    {
-        align(size_t.sizeof) ubyte[256 * 1024] buf;
-        auto a = KRRegion!()(buf);
-
-        void[][] bufs;
-
-        foreach (size; sizes)
+    static if (__VERSION__ >= 2072) {
+        mixin(`
+        void test(int[] sizes, int word)
         {
-            bufs ~= a.allocate(size);
+            align(size_t.sizeof) ubyte[256 * 1024] buf;
+            auto a = KRRegion!()(buf);
+
+            void[][] bufs;
+
+            foreach (size; sizes)
+            {
+                bufs ~= a.allocate(size);
+            }
+
+            a.deallocate(bufs[1]);
+            bufs ~= a.allocate(sizes[1] - word);
+
+            a.deallocate(bufs[0]);
+            foreach (i; 2 .. bufs.length)
+            {
+                a.deallocate(bufs[i]);
+            }
+
+            assert(a.empty == Ternary.yes);
         }
 
-        a.deallocate(bufs[1]);
-        bufs ~= a.allocate(sizes[1] - word);
-
-        a.deallocate(bufs[0]);
-        foreach (i; 2 .. bufs.length)
-        {
-            a.deallocate(bufs[i]);
-        }
-
-        assert(a.empty == Ternary.yes);
+        test(sizes64, word64);
+        test(sizes32, word32);
+        `);
     }
-
-    test(sizes64, word64);
-    test(sizes32, word32);
 }

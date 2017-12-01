@@ -16,7 +16,7 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
 {
     import std.algorithm.comparison : min;
     import std.traits : hasMember;
-    import std.typecons : Ternary;
+    import stdx.allocator.internal : Ternary;
 
     static if (stateSize!SmallAllocator) private SmallAllocator _small;
     else private alias _small = SmallAllocator.instance;
