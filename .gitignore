@@ -8,6 +8,7 @@ allocator.dll
 allocator.a
 allocator.lib
 allocator-test-*
+stdx-allocator-test-*
 *.exe
 *.o
 *.obj
