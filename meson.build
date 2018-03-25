@@ -1,4 +1,4 @@
-project('allocator', 'd',
+project('stdx-allocator', 'd',
     meson_version: '>=0.44',
     license: 'BSL-1.0',
     version: '2.77.0'
@@ -42,7 +42,7 @@ src_dir = include_directories('source/')
 #
 # Targets
 #
-allocator_lib = library('allocator',
+allocator_lib = library('stdx-allocator',
         [allocator_src],
         include_directories: [src_dir],
         install: true,
@@ -50,7 +50,7 @@ allocator_lib = library('allocator',
         soversion: project_soversion
 )
 
-pkgc.generate(name: 'allocator',
+pkgc.generate(name: 'stdx-allocator',
               libraries: [allocator_lib],
               subdirs: 'd/allocator',
               version: meson.project_version(),
