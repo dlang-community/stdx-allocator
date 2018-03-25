@@ -1,11 +1,10 @@
-project('allocator', 'd',
-    meson_version: '>=0.40',
-    license: 'MIT',
+project('stdx-allocator', 'd',
+    meson_version: '>=0.44',
+    license: 'BSL-1.0',
     version: '2.77.0'
 )
 
 project_soversion = '0'
-project_version   = meson.project_version()
 
 pkgc = import('pkgconfig')
 
@@ -43,18 +42,18 @@ src_dir = include_directories('source/')
 #
 # Targets
 #
-allocator_lib = library('allocator',
+allocator_lib = library('stdx-allocator',
         [allocator_src],
         include_directories: [src_dir],
         install: true,
-        version: project_version,
+        version: meson.project_version(),
         soversion: project_soversion
 )
 
-pkgc.generate(name: 'allocator',
+pkgc.generate(name: 'stdx-allocator',
               libraries: [allocator_lib],
               subdirs: 'd/allocator',
-              version: project_version,
+              version: meson.project_version(),
               description: 'Extracted std.experimental.allocator for usage via DUB.'
 )
 
@@ -70,7 +69,7 @@ allocator_dep = declare_dependency(
 allocator_test_exe = executable('test_allocator',
     [allocator_src],
     include_directories: [src_dir],
-    d_args: meson.get_compiler('d').unittest_args(),
+    d_unittest: true,
     link_args: '-main'
 )
 test('test_allocator', allocator_test_exe)
