@@ -1,6 +1,6 @@
 project('allocator', 'd',
     meson_version: '>=0.40',
-    license: 'MIT',
+    license: 'BSL-1.0',
     version: '2.77.0'
 )
 
