@@ -52,7 +52,7 @@ allocator_lib = library('stdx-allocator',
 
 pkgc.generate(name: 'stdx-allocator',
               libraries: [allocator_lib],
-              subdirs: 'd/allocator',
+              subdirs: 'd/stdx',
               version: meson.project_version(),
               description: 'Extracted std.experimental.allocator for usage via DUB.'
 )
