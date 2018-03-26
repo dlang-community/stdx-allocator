@@ -1,7 +1,7 @@
 project('stdx-allocator', 'd',
-    meson_version: '>=0.44',
+    meson_version: '>=0.45',
     license: 'BSL-1.0',
-    version: '2.77.0'
+    version: '2.77.1'
 )
 
 project_soversion = '0'
