@@ -52,7 +52,7 @@ allocator_lib = library('stdx-allocator',
 
 pkgc.generate(name: 'stdx-allocator',
               libraries: [allocator_lib],
-              subdirs: 'd/stdx',
+              subdirs: 'd/stdx-allocator',
               version: meson.project_version(),
               description: 'High-level interface for allocators for D, extracted from Phobos.'
 )
@@ -77,4 +77,4 @@ test('test_allocator', allocator_test_exe)
 #
 # Install
 #
-install_subdir('source/stdx/', install_dir: 'include/d/stdx/')
+install_subdir('source/stdx/', install_dir: 'include/d/stdx-allocator/')
