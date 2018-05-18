@@ -133,7 +133,7 @@ version (Windows)
         @nogc nothrow
         private void* _aligned_malloc(size_t size, size_t alignment)
         {
-            import std.c.stdlib : malloc;
+            import core.stdc.stdlib : malloc;
             size_t offset = alignment + size_t.sizeof * 2 - 1;
 
             // unaligned chunk
