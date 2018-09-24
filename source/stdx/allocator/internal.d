@@ -1306,14 +1306,15 @@ pure nothrow @safe /* @nogc */ unittest
 }
 // Bulk of emplace unittests ends here
 
-static if (__VERSION__ >= 2072)
+static if (is(typeof({ import std.typecons : Ternary; })))
 {
     public import std.typecons : Ternary;
 }
-else
+else static if (is(typeof({ import std.experimental.allocator.common : Ternary;  })))
 {
     public import std.experimental.allocator.common : Ternary;
 }
+else static assert(0, "Oops, dont know how to find Ternary");
 
 /**
 Check whether a number is an integer power of two.
