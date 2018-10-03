@@ -202,7 +202,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         && hasMember!(ParentAllocator, "deallocate"))
     ~this()
     {
-        auto start = _control.rep.ptr, end = _payload.ptr + _payload.length;
+        auto start = _control.rep.ptr, end = cast(ulong*)(_payload.ptr + _payload.length);
         parent.deallocate(start[0 .. end - start]);
     }
 
