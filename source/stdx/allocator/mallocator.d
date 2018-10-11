@@ -23,7 +23,7 @@ struct Mallocator
     programs that can afford to leak memory allocated.
     */
     @trusted @nogc nothrow
-    void[] allocate(size_t bytes) shared
+    static void[] allocate(size_t bytes)
     {
         import core.stdc.stdlib : malloc;
         if (!bytes) return null;
@@ -33,7 +33,7 @@ struct Mallocator
 
     /// Ditto
     @system @nogc nothrow
-    bool deallocate(void[] b) shared
+    static bool deallocate(void[] b)
     {
         import core.stdc.stdlib : free;
         free(b.ptr);
@@ -42,7 +42,7 @@ struct Mallocator
 
     /// Ditto
     @system @nogc nothrow
-    bool reallocate(ref void[] b, size_t s) shared
+    static bool reallocate(ref void[] b, size_t s)
     {
         import core.stdc.stdlib : realloc;
         if (!s)
@@ -61,10 +61,10 @@ struct Mallocator
 
     /**
     Returns the global instance of this allocator type. The C heap allocator is
-    thread-safe, therefore all of its methods and `it` itself are
+    thread-safe, therefore all of its methods are $(D static) and `instance` itself is
     $(D shared).
     */
-    static shared Mallocator instance;
+    enum Mallocator instance = Mallocator();
 }
 
 ///
@@ -214,7 +214,7 @@ struct AlignedMallocator
     Forwards to $(D alignedAllocate(bytes, platformAlignment)).
     */
     @trusted @nogc nothrow
-    void[] allocate(size_t bytes) shared
+    static void[] allocate(size_t bytes)
     {
         if (!bytes) return null;
         return alignedAllocate(bytes, alignment);
@@ -228,7 +228,7 @@ struct AlignedMallocator
     */
     version(Posix)
     @trusted @nogc nothrow
-    void[] alignedAllocate(size_t bytes, uint a) shared
+    static void[] alignedAllocate(size_t bytes, uint a)
     {
         import core.stdc.errno : ENOMEM, EINVAL;
         assert(a.isGoodDynamicAlignment);
@@ -250,7 +250,7 @@ struct AlignedMallocator
     }
     else version(Windows)
     @trusted @nogc nothrow
-    void[] alignedAllocate(size_t bytes, uint a) shared
+    static void[] alignedAllocate(size_t bytes, uint a)
     {
         auto result = _aligned_malloc(bytes, a);
         return result ? result[0 .. bytes] : null;
@@ -264,7 +264,7 @@ struct AlignedMallocator
     */
     version (Posix)
     @system @nogc nothrow
-    bool deallocate(void[] b) shared
+    static bool deallocate(void[] b)
     {
         import core.stdc.stdlib : free;
         free(b.ptr);
@@ -272,7 +272,7 @@ struct AlignedMallocator
     }
     else version (Windows)
     @system @nogc nothrow
-    bool deallocate(void[] b) shared
+    static bool deallocate(void[] b)
     {
         _aligned_free(b.ptr);
         return true;
@@ -285,13 +285,13 @@ struct AlignedMallocator
     */
     version (Posix)
     @system @nogc nothrow
-    bool reallocate(ref void[] b, size_t newSize) shared
+    static bool reallocate(ref void[] b, size_t newSize)
     {
         return Mallocator.instance.reallocate(b, newSize);
     }
     version (Windows)
     @system @nogc nothrow
-    bool reallocate(ref void[] b, size_t newSize) shared
+    static bool reallocate(ref void[] b, size_t newSize)
     {
         return alignedReallocate(b, newSize, alignment);
     }
@@ -304,7 +304,7 @@ struct AlignedMallocator
     */
     version (Windows)
     @system @nogc nothrow
-    bool alignedReallocate(ref void[] b, size_t s, uint a) shared
+    static bool alignedReallocate(ref void[] b, size_t s, uint a)
     {
         if (!s)
         {
@@ -320,10 +320,10 @@ struct AlignedMallocator
 
     /**
     Returns the global instance of this allocator type. The C heap allocator is
-    thread-safe, therefore all of its methods and `instance` itself are
+    thread-safe, therefore all of its methods are $(D static) and `instance` itself is
     $(D shared).
     */
-    static shared AlignedMallocator instance;
+    enum AlignedMallocator instance = AlignedMallocator();
 }
 
 ///

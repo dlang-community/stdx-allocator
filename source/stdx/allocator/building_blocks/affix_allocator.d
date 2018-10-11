@@ -85,7 +85,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
         alias parent = Allocator.instance;
     }
 
-    private template Impl()
+    private template Impl(bool isStatic)
     {
 
         size_t goodAllocSize(size_t s)
@@ -97,6 +97,22 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
                 this.alignment);
         }
 
+        static if (isStatic)
+        private size_t actualAllocationSize(size_t s)
+        {
+            assert(s > 0);
+            static if (!stateSize!Suffix)
+            {
+                return s + stateSize!Prefix;
+            }
+            else
+            {
+                return
+                    roundUpToMultipleOf(s + stateSize!Prefix, Suffix.alignof)
+                    + stateSize!Suffix;
+            }
+        }
+        else
         private size_t actualAllocationSize(size_t s) const
         {
             assert(s > 0);
@@ -112,6 +128,14 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
             }
         }
 
+        static if (isStatic)
+        private void[] actualAllocation(void[] b)
+        {
+            assert(b !is null);
+            return (b.ptr - stateSize!Prefix)
+                [0 .. actualAllocationSize(b.length)];
+        }
+        else
         private void[] actualAllocation(void[] b) const
         {
             assert(b !is null);
@@ -343,15 +367,21 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
         ref auto suffix(T)(T[] b);
     }
     else static if (is(typeof(Allocator.instance) == shared))
-    {
-        static shared AffixAllocator instance;
-        shared { mixin Impl!(); }
+    { // for backward compatability
+        enum shared AffixAllocator instance = AffixAllocator();
+        static { mixin Impl!true; }
     }
     else
     {
-        mixin Impl!();
         static if (stateSize!Allocator == 0)
-            static __gshared AffixAllocator instance;
+        {
+            enum AffixAllocator instance = AffixAllocator();
+            static { mixin Impl!true; }
+        }
+        else
+        {
+            mixin Impl!false;
+        }
     }
 }
 

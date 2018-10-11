@@ -190,12 +190,15 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
                     return _large.reallocate(b, s);
                 }
             // Cross-allocator transgression
-            return .reallocate(this, b, s);
+            static if (!hasMember!(typeof(this), "instance"))
+                return .reallocate(this, b, s);
+            else
+                return .reallocate(instance, b, s);
         }
 
         static if (hasMember!(SmallAllocator, "alignedReallocate")
                 || hasMember!(LargeAllocator, "alignedReallocate"))
-        bool reallocate(ref void[] b, size_t s)
+        bool alignedReallocate(ref void[] b, size_t s)
         {
             static if (hasMember!(SmallAllocator, "alignedReallocate"))
                 if (b.length <= threshold && s <= threshold)
@@ -210,7 +213,10 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
                     return _large.alignedReallocate(b, s);
                 }
             // Cross-allocator transgression
-            return .alignedReallocate(this, b, s);
+            static if (!hasMember!(typeof(this), "instance"))
+                return .alignedReallocate(this, b, s);
+            else
+                return .alignedReallocate(instance, b, s);
         }
 
         static if (hasMember!(SmallAllocator, "owns")
@@ -261,15 +267,21 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
         && is(typeof(LargeAllocator.instance) == shared);
 
     static if (sharedMethods)
-    {
-        static shared Segregator instance;
-        shared { mixin Impl!(); }
+    { // for backward compatability
+        enum shared Segregator instance = Segregator();
+        static { mixin Impl!(); }
     }
     else
     {
         static if (!stateSize!SmallAllocator && !stateSize!LargeAllocator)
-            static __gshared Segregator instance;
-        mixin Impl!();
+        {
+            enum shared Segregator instance = Segregator();
+            static { mixin Impl!(); }
+        }
+        else
+        {
+            mixin Impl!();
+        }
     }
 }
 
