@@ -59,7 +59,7 @@ struct NullAllocator
     */
     static Ternary empty() { return Ternary.yes; }
     /**
-    static Returns the $(D static) global instance of the $(D NullAllocator).
+    Returns the $(D static) global instance of the $(D NullAllocator).
     */
     enum NullAllocator instance = NullAllocator();
 }
