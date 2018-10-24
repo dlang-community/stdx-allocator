@@ -13,9 +13,8 @@ module stdx.allocator.typed;
 
 import stdx.allocator;
 import stdx.allocator.common;
-import std.range : isInputRange, isForwardRange, walkLength, save, empty,
+import std.range.primitives : isInputRange, isForwardRange, save, empty,
     front, popFront;
-import std.traits : isPointer, hasElaborateDestructor;
 import std.typecons : Flag, Yes, No;
 
 /**

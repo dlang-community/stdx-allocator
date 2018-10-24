@@ -52,9 +52,7 @@ struct FreeTree(ParentAllocator)
     static assert(ParentAllocator.alignment % size_t.alignof == 0,
         "FreeTree must be on top of a word-aligned allocator");
 
-    import std.algorithm.comparison : min, max;
-    import std.algorithm.mutation : swap;
-    import std.traits : hasMember;
+    import mir.utility : min, max;
 
     // State
     static if (stateSize!ParentAllocator) private ParentAllocator parent;
@@ -141,35 +139,6 @@ struct FreeTree(ParentAllocator)
         recurse(root);
     }
 
-    private string formatSizes()
-    {
-        string result = "(";
-        void recurse(Node* n)
-        {
-            if (!n)
-            {
-                result ~= "_";
-                return;
-            }
-            import std.conv : to;
-            result ~= to!string(n.size);
-            for (auto sis = n.sibling; sis; sis = sis.sibling)
-            {
-                result ~= "+moar";
-            }
-            if (n.left || n.right)
-            {
-                result ~= " (";
-                recurse(n.left);
-                result ~= ' ';
-                recurse(n.right);
-                result ~= ")";
-            }
-        }
-        recurse(root);
-        return result ~= ")";
-    }
-
     private static void rotate(ref Node* parent, bool toRight)
     {
         assert(parent);
@@ -253,7 +222,7 @@ struct FreeTree(ParentAllocator)
     The destructor of $(D FreeTree) releases all memory back to the parent
     allocator.
     */
-    static if (hasMember!(ParentAllocator, "deallocate"))
+    static if (__traits(hasMember, ParentAllocator, "deallocate"))
     ~this()
     {
         clear;
@@ -301,7 +270,7 @@ struct FreeTree(ParentAllocator)
         if (result.ptr) return result.ptr[0 .. n];
 
         // Parent ran out of juice, desperation mode on
-        static if (hasMember!(ParentAllocator, "deallocate"))
+        static if (__traits(hasMember, ParentAllocator, "deallocate"))
         {
             clear;
             // Try parent allocator again.
@@ -332,27 +301,6 @@ struct FreeTree(ParentAllocator)
         return true;
     }
 
-    @system unittest // test a few simple configurations
-    {
-        import stdx.allocator.gc_allocator;
-        FreeTree!GCAllocator a;
-        auto b1 = a.allocate(10000);
-        auto b2 = a.allocate(20000);
-        auto b3 = a.allocate(30000);
-        assert(b1.ptr && b2.ptr && b3.ptr);
-        a.deallocate(b1);
-        a.deallocate(b3);
-        a.deallocate(b2);
-        assert(a.formatSizes == "(20480 (12288 32768))", a.formatSizes);
-
-        b1 = a.allocate(10000);
-        assert(a.formatSizes == "(20480 (_ 32768))", a.formatSizes);
-        b1 = a.allocate(30000);
-        assert(a.formatSizes == "(20480)", a.formatSizes);
-        b1 = a.allocate(20000);
-        assert(a.formatSizes == "(_)", a.formatSizes);
-    }
-
     @system unittest // build a complex free tree
     {
         import stdx.allocator.gc_allocator, std.range;
@@ -377,7 +325,7 @@ struct FreeTree(ParentAllocator)
 
     /** Defined if $(D ParentAllocator.deallocate) exists, and returns to it
     all memory held in the free tree. */
-    static if (hasMember!(ParentAllocator, "deallocate"))
+    static if (__traits(hasMember, ParentAllocator, "deallocate"))
     void clear()
     {
         void recurse(Node* n)
@@ -398,7 +346,7 @@ struct FreeTree(ParentAllocator)
     stil managed by the free tree).
 
     */
-    static if (hasMember!(ParentAllocator, "deallocateAll"))
+    static if (__traits(hasMember, ParentAllocator, "deallocateAll"))
     bool deallocateAll()
     {
         // This is easy, just nuke the root and deallocate all from the

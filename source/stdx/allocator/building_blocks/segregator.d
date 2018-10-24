@@ -14,8 +14,7 @@ shared) methods.
 */
 struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
 {
-    import std.algorithm.comparison : min;
-    import std.traits : hasMember;
+    import mir.utility : min;
     import stdx.allocator.internal : Ternary;
 
     static if (stateSize!SmallAllocator) private SmallAllocator _small;
@@ -139,8 +138,8 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
             return s <= threshold ? _small.allocate(s) : _large.allocate(s);
         }
 
-        static if (hasMember!(SmallAllocator, "alignedAllocate")
-                && hasMember!(LargeAllocator, "alignedAllocate"))
+        static if (__traits(hasMember, SmallAllocator, "alignedAllocate")
+                && __traits(hasMember, LargeAllocator, "alignedAllocate"))
         void[] alignedAllocate(size_t s, uint a)
         {
             return s <= threshold
@@ -148,15 +147,15 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
                 : _large.alignedAllocate(s, a);
         }
 
-        static if (hasMember!(SmallAllocator, "expand")
-                || hasMember!(LargeAllocator, "expand"))
+        static if (__traits(hasMember, SmallAllocator, "expand")
+                || __traits(hasMember, LargeAllocator, "expand"))
         bool expand(ref void[] b, size_t delta)
         {
             if (!delta) return true;
             if (b.length + delta <= threshold)
             {
                 // Old and new allocations handled by _small
-                static if (hasMember!(SmallAllocator, "expand"))
+                static if (__traits(hasMember, SmallAllocator, "expand"))
                     return _small.expand(b, delta);
                 else
                     return false;
@@ -164,7 +163,7 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
             if (b.length > threshold)
             {
                 // Old and new allocations handled by _large
-                static if (hasMember!(LargeAllocator, "expand"))
+                static if (__traits(hasMember, LargeAllocator, "expand"))
                     return _large.expand(b, delta);
                 else
                     return false;
@@ -173,62 +172,62 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
             return false;
         }
 
-        static if (hasMember!(SmallAllocator, "reallocate")
-                || hasMember!(LargeAllocator, "reallocate"))
+        static if (__traits(hasMember, SmallAllocator, "reallocate")
+                || __traits(hasMember, LargeAllocator, "reallocate"))
         bool reallocate(ref void[] b, size_t s)
         {
-            static if (hasMember!(SmallAllocator, "reallocate"))
+            static if (__traits(hasMember, SmallAllocator, "reallocate"))
                 if (b.length <= threshold && s <= threshold)
                 {
                     // Old and new allocations handled by _small
                     return _small.reallocate(b, s);
                 }
-            static if (hasMember!(LargeAllocator, "reallocate"))
+            static if (__traits(hasMember, LargeAllocator, "reallocate"))
                 if (b.length > threshold && s > threshold)
                 {
                     // Old and new allocations handled by _large
                     return _large.reallocate(b, s);
                 }
             // Cross-allocator transgression
-            static if (!hasMember!(typeof(this), "instance"))
+            static if (!__traits(hasMember, typeof(this), "instance"))
                 return .reallocate(this, b, s);
             else
                 return .reallocate(instance, b, s);
         }
 
-        static if (hasMember!(SmallAllocator, "alignedReallocate")
-                || hasMember!(LargeAllocator, "alignedReallocate"))
+        static if (__traits(hasMember, SmallAllocator, "alignedReallocate")
+                || __traits(hasMember, LargeAllocator, "alignedReallocate"))
         bool alignedReallocate(ref void[] b, size_t s)
         {
-            static if (hasMember!(SmallAllocator, "alignedReallocate"))
+            static if (__traits(hasMember, SmallAllocator, "alignedReallocate"))
                 if (b.length <= threshold && s <= threshold)
                 {
                     // Old and new allocations handled by _small
                     return _small.alignedReallocate(b, s);
                 }
-            static if (hasMember!(LargeAllocator, "alignedReallocate"))
+            static if (__traits(hasMember, LargeAllocator, "alignedReallocate"))
                 if (b.length > threshold && s > threshold)
                 {
                     // Old and new allocations handled by _large
                     return _large.alignedReallocate(b, s);
                 }
             // Cross-allocator transgression
-            static if (!hasMember!(typeof(this), "instance"))
+            static if (!__traits(hasMember, typeof(this), "instance"))
                 return .alignedReallocate(this, b, s);
             else
                 return .alignedReallocate(instance, b, s);
         }
 
-        static if (hasMember!(SmallAllocator, "owns")
-                && hasMember!(LargeAllocator, "owns"))
+        static if (__traits(hasMember, SmallAllocator, "owns")
+                && __traits(hasMember, LargeAllocator, "owns"))
         Ternary owns(void[] b)
         {
             return Ternary(b.length <= threshold
                 ? _small.owns(b) : _large.owns(b));
         }
 
-        static if (hasMember!(SmallAllocator, "deallocate")
-                && hasMember!(LargeAllocator, "deallocate"))
+        static if (__traits(hasMember, SmallAllocator, "deallocate")
+                && __traits(hasMember, LargeAllocator, "deallocate"))
         bool deallocate(void[] data)
         {
             return data.length <= threshold
@@ -236,23 +235,23 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
                 : _large.deallocate(data);
         }
 
-        static if (hasMember!(SmallAllocator, "deallocateAll")
-                && hasMember!(LargeAllocator, "deallocateAll"))
+        static if (__traits(hasMember, SmallAllocator, "deallocateAll")
+                && __traits(hasMember, LargeAllocator, "deallocateAll"))
         bool deallocateAll()
         {
             // Use & insted of && to evaluate both
             return _small.deallocateAll() & _large.deallocateAll();
         }
 
-        static if (hasMember!(SmallAllocator, "empty")
-                && hasMember!(LargeAllocator, "empty"))
+        static if (__traits(hasMember, SmallAllocator, "empty")
+                && __traits(hasMember, LargeAllocator, "empty"))
         Ternary empty()
         {
             return _small.empty && _large.empty;
         }
 
-        static if (hasMember!(SmallAllocator, "resolveInternalPointer")
-                && hasMember!(LargeAllocator, "resolveInternalPointer"))
+        static if (__traits(hasMember, SmallAllocator, "resolveInternalPointer")
+                && __traits(hasMember, LargeAllocator, "resolveInternalPointer"))
         Ternary resolveInternalPointer(const void* p, ref void[] result)
         {
             Ternary r = _small.resolveInternalPointer(p, result);

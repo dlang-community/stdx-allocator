@@ -45,14 +45,12 @@ block size to the constructor.
 struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment,
     ParentAllocator = NullAllocator)
 {
-    import std.conv : text;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
     import std.typecons : tuple, Tuple;
 
     @system unittest
     {
-        import std.algorithm.comparison : max;
+        import mir.utility : max;
         import stdx.allocator.mallocator : AlignedMallocator;
         auto m = cast(ubyte[])(AlignedMallocator.instance.alignedAllocate(1024 * 64,
                                 max(theAlignment, cast(uint) size_t.sizeof)));
@@ -117,7 +115,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     {
         alias parent = ParentAllocator.instance;
     }
-    private uint _blocks;
+    private size_t _blocks;
     private BitVector _control;
     private void[] _payload;
     private size_t _startIdx;
@@ -127,7 +125,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     {
         auto blocks = capacity.divideRoundUp(blockSize);
         auto leadingUlongs = blocks.divideRoundUp(64);
-        import std.algorithm.comparison : min;
+        import mir.utility : min;
         immutable initialAlignment = min(parentAlignment,
             1U << trailingZeros(leadingUlongs * 8));
         auto maxSlack = alignment <= initialAlignment
@@ -162,8 +160,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         immutable ulong totalBits = data.length * 8;
         immutable ulong bitsPerBlock = blockSize * 8 + 1;
         // Get a first estimate
-        import std.conv : to;
-        _blocks = to!uint(totalBits / bitsPerBlock);
+        _blocks = cast(size_t)(totalBits / bitsPerBlock);
 
         // Reality is a bit more complicated, iterate until a good number of
         // blocks found.
@@ -199,7 +196,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     deallocate), the destructor is defined to deallocate the block held.
     */
     static if (!is(ParentAllocator == NullAllocator)
-        && hasMember!(ParentAllocator, "deallocate"))
+        && __traits(hasMember, ParentAllocator, "deallocate"))
     ~this()
     {
         auto start = _control.rep.ptr, end = cast(ulong*)(_payload.ptr + _payload.length);
@@ -424,7 +421,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 
     private void[] smallAlloc(uint blocks)
     {
-        assert(blocks >= 2 && blocks <= 64, text(blocks));
+        assert(blocks >= 2 && blocks <= 64);
         foreach (i; _startIdx .. _control.rep.length)
         {
             // Test within the current 64-bit word
@@ -526,8 +523,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
             return false;
         }
         // Expansion successful
-        assert(p.ptr == b.ptr + blocksOld * blockSize,
-            text(p.ptr, " != ", b.ptr + blocksOld * blockSize));
+        assert(p.ptr == b.ptr + blocksOld * blockSize);
         b = b.ptr[0 .. b.length + delta];
         return true;
     }
@@ -690,14 +686,13 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 }
 
 ///
-@system unittest
+@nogc @system unittest
 {
     // Create a block allocator on top of a 10KB stack region.
     import stdx.allocator.building_blocks.region : InSituRegion;
-    import std.traits : hasMember;
     InSituRegion!(10_240, 64) r;
     auto a = BitmappedBlock!(64, 64)(cast(ubyte[])(r.allocateAll()));
-    static assert(hasMember!(InSituRegion!(10_240, 64), "allocateAll"));
+    static assert(__traits(hasMember, InSituRegion!(10_240, 64), "allocateAll"));
     const b = a.allocate(100);
     assert(b.length == 100);
 }
@@ -710,9 +705,9 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 
 @system unittest
 {
-    static void testAllocateAll(size_t bs)(uint blocks, uint blocksAtATime)
+    static void testAllocateAll(size_t bs)(size_t blocks, uint blocksAtATime)
     {
-        import std.algorithm.comparison : min;
+        import mir.utility : min;
         assert(bs);
         import stdx.allocator.gc_allocator : GCAllocator;
         auto a = BitmappedBlock!(bs, min(bs, platformAlignment))(
@@ -859,7 +854,6 @@ struct BitmappedBlockWithInternalPointers(
     size_t theBlockSize, uint theAlignment = platformAlignment,
     ParentAllocator = NullAllocator)
 {
-    import std.conv : text;
     import stdx.allocator.internal : Ternary;
     @system unittest
     {
@@ -902,7 +896,7 @@ struct BitmappedBlockWithInternalPointers(
         immutable bits = len.roundUpToMultipleOf(64);
         void[] b = _allocStart.rep;
         if (!_heap.reallocate(b, bits / 8)) return false;
-        assert(b.length * 8 == bits, text(b.length * 8, " != ", bits));
+        assert(b.length * 8 == bits);
         _allocStart = BitVector(cast(ulong[]) b);
         assert(_allocStart.rep.length * 64 == bits);
         _allocStart.rep[oldLength .. $] = ulong.max;
@@ -1095,7 +1089,7 @@ struct BitmappedBlockWithInternalPointers(
 Returns the number of most significant ones before a zero can be found in $(D
 x). If $(D x) contains no zeros (i.e. is equal to $(D ulong.max)), returns 64.
 */
-private uint leadingOnes(ulong x)
+private uint leadingOnes()(ulong x)
 {
     uint result = 0;
     while (cast(long) x < 0)
@@ -1120,7 +1114,7 @@ private uint leadingOnes(ulong x)
 /**
 Finds a run of contiguous ones in $(D x) of length at least $(D n).
 */
-private uint findContigOnes(ulong x, uint n)
+private uint findContigOnes()(ulong x, uint n)
 {
     while (n > 1)
     {
@@ -1148,7 +1142,7 @@ private uint findContigOnes(ulong x, uint n)
 /*
 Unconditionally sets the bits from lsb through msb in w to zero.
 */
-private void setBits(ref ulong w, uint lsb, uint msb)
+private void setBits()(ref ulong w, uint lsb, uint msb)
 {
     assert(lsb <= msb && msb < 64);
     const mask = (ulong.max << lsb) & (ulong.max >> (63 - msb));
@@ -1167,7 +1161,7 @@ private void setBits(ref ulong w, uint lsb, uint msb)
 /* Are bits from lsb through msb in w zero? If so, make then 1
 and return the resulting w. Otherwise, just return 0.
 */
-private bool setBitsIfZero(ref ulong w, uint lsb, uint msb)
+private bool setBitsIfZero()(ref ulong w, uint lsb, uint msb)
 {
     assert(lsb <= msb && msb < 64);
     const mask = (ulong.max << lsb) & (ulong.max >> (63 - msb));
@@ -1177,7 +1171,7 @@ private bool setBitsIfZero(ref ulong w, uint lsb, uint msb)
 }
 
 // Assigns bits in w from lsb through msb to zero.
-private void resetBits(ref ulong w, uint lsb, uint msb)
+private void resetBits()(ref ulong w, uint lsb, uint msb)
 {
     assert(lsb <= msb && msb < 64);
     const mask = (ulong.max << lsb) & (ulong.max >> (63 - msb));
@@ -1190,6 +1184,8 @@ Bit disposition is MSB=0 (leftmost, big endian).
 private struct BitVector
 {
     ulong[] _rep;
+
+@safe pure nothrow @nogc:
 
     auto rep() { return _rep; }
 

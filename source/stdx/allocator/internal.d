@@ -1259,7 +1259,7 @@ pure nothrow @safe /* @nogc */ unittest
     import core.stdc.stdlib : malloc;
     void[] buf = malloc(Node.sizeof)[0 .. Node.sizeof];
 
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     const Node* n = emplace!(const Node)(buf, 42, null, 10);
     assert(n.payload == 42);
     assert(n.next == null);

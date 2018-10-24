@@ -19,14 +19,13 @@ The following methods are defined if $(D Allocator) defines them, and forward to
  */
 struct AffixAllocator(Allocator, Prefix, Suffix = void)
 {
-    import std.algorithm.comparison : min;
-    import std.conv : emplace;
+    import mir.utility : min;
+    import stdx.allocator.internal : emplace;
     import stdx.allocator : IAllocator, theAllocator;
     import stdx.allocator.common : stateSize, forwardToMember,
         roundUpToMultipleOf, alignedAt, alignDownTo, roundUpToMultipleOf,
         hasStaticallyKnownAlignment;
     import stdx.allocator.internal : isPowerOf2;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     static if (hasStaticallyKnownAlignment!Allocator)
@@ -162,7 +161,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
             return result[stateSize!Prefix .. stateSize!Prefix + bytes];
         }
 
-        static if (hasMember!(Allocator, "allocateAll"))
+        static if (__traits(hasMember, Allocator, "allocateAll"))
         void[] allocateAll()
         {
             auto result = parent.allocateAll();
@@ -191,14 +190,14 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
             return result;
         }
 
-        static if (hasMember!(Allocator, "owns"))
+        static if (__traits(hasMember, Allocator, "owns"))
         Ternary owns(void[] b)
         {
             if (b is null) return Ternary.no;
             return parent.owns(actualAllocation(b));
         }
 
-        static if (hasMember!(Allocator, "resolveInternalPointer"))
+        static if (__traits(hasMember, Allocator, "resolveInternalPointer"))
         Ternary resolveInternalPointer(const void* p, ref void[] result)
         {
             void[] p1;
@@ -212,7 +211,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
             return Ternary.yes;
         }
 
-        static if (!stateSize!Suffix && hasMember!(Allocator, "expand"))
+        static if (!stateSize!Suffix && __traits(hasMember, Allocator, "expand"))
         bool expand(ref void[] b, size_t delta)
         {
             if (!b.ptr) return delta == 0;
@@ -223,7 +222,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
             return true;
         }
 
-        static if (hasMember!(Allocator, "reallocate"))
+        static if (__traits(hasMember, Allocator, "reallocate"))
         bool reallocate(ref void[] b, size_t s)
         {
             if (b is null)
@@ -238,7 +237,7 @@ struct AffixAllocator(Allocator, Prefix, Suffix = void)
             return true;
         }
 
-        static if (hasMember!(Allocator, "deallocate"))
+        static if (__traits(hasMember, Allocator, "deallocate"))
         bool deallocate(void[] b)
         {
             if (!b.ptr) return true;
