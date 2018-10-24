@@ -22,7 +22,7 @@ struct GCAllocator
     deallocate) and $(D reallocate) methods are $(D @system) because they may
     move memory around, leaving dangling pointers in user code.
     */
-    static pure nothrow @trusted void[] allocate(size_t bytes)
+    static pure nothrow @trusted void[] allocate()(size_t bytes)
     {
         if (!bytes) return null;
         auto p = GC.malloc(bytes);
@@ -30,7 +30,7 @@ struct GCAllocator
     }
 
     /// Ditto
-    static @system bool expand(ref void[] b, size_t delta)
+    static @system bool expand()(ref void[] b, size_t delta)
     {
         if (delta == 0) return true;
         if (b is null) return false;
@@ -53,7 +53,7 @@ struct GCAllocator
     }
 
     /// Ditto
-    static pure nothrow @system bool reallocate(ref void[] b, size_t newSize)
+    static pure nothrow @system bool reallocate()(ref void[] b, size_t newSize)
     {
         import core.exception : OutOfMemoryError;
         try
@@ -71,7 +71,7 @@ struct GCAllocator
 
     /// Ditto
     pure nothrow
-    static Ternary resolveInternalPointer(const void* p, ref void[] result)
+    static Ternary resolveInternalPointer()(const void* p, ref void[] result)
     {
         auto r = GC.addrOf(cast(void*) p);
         if (!r) return Ternary.no;
@@ -80,14 +80,14 @@ struct GCAllocator
     }
 
     /// Ditto
-    static pure nothrow @system bool deallocate(void[] b)
+    static pure nothrow @system bool deallocate()(void[] b)
     {
         GC.free(b.ptr);
         return true;
     }
 
     /// Ditto
-    static size_t goodAllocSize(size_t n)
+    static size_t goodAllocSize()(size_t n)
     {
         if (n == 0)
             return 0;
@@ -112,7 +112,7 @@ struct GCAllocator
     enum GCAllocator instance = GCAllocator();
 
     // Leave it undocummented for now.
-    static nothrow @trusted void collect()
+    static nothrow @trusted void collect()()
     {
         GC.collect();
     }

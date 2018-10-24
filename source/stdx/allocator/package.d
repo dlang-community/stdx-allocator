@@ -463,7 +463,7 @@ interface ISharedAllocator
 private shared ISharedAllocator _processAllocator;
 private IAllocator _threadAllocator;
 
-private IAllocator setupThreadAllocator() nothrow @nogc @safe
+private IAllocator setupThreadAllocator()() nothrow @nogc @safe
 {
     /*
     Forwards the `_threadAllocator` calls to the `processAllocator`
