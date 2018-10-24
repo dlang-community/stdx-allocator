@@ -632,7 +632,7 @@ allocator can be cast to $(D shared).
     shared ISharedAllocator indirectShFLObj = sharedAllocatorObject(&sharedFL);
     testAllocatorObject(indirectShFLObj);
 
-    IAllocator indirectMallocator = allocatorObject(&Mallocator.instance);
+    IAllocator indirectMallocator = allocatorObject(Mallocator.instance);
     testAllocatorObject(indirectMallocator);
 }
 

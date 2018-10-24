@@ -599,12 +599,12 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
 
     static assert(minAlign.isGoodStaticAlignment);
     static assert(size_t.sizeof == (void*).sizeof);
-    private shared void* _brkInitial, _brkCurrent;
+    private static shared void* _brkInitial, _brkCurrent;
 
     /**
     Instance shared by all callers.
     */
-    static shared SbrkRegion instance;
+    enum SbrkRegion instance = SbrkRegion();
 
     /**
     Standard allocator primitives.
@@ -612,7 +612,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
     enum uint alignment = minAlign;
 
     /// Ditto
-    void[] allocate(size_t bytes) shared
+    static void[] allocate(size_t bytes)
     {
         static if (minAlign > 1)
             const rounded = bytes.roundUpToMultipleOf(alignment);
@@ -640,7 +640,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
     }
 
     /// Ditto
-    void[] alignedAllocate(size_t bytes, uint a) shared
+    static void[] alignedAllocate(size_t bytes, uint a)
     {
         pthread_mutex_lock(cast(pthread_mutex_t*) &sbrkMutex) == 0 || assert(0);
         scope(exit) pthread_mutex_unlock(cast(pthread_mutex_t*) &sbrkMutex) == 0
@@ -676,7 +676,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
     the right.
 
     */
-    bool expand(ref void[] b, size_t delta) shared
+    static bool expand(ref void[] b, size_t delta)
     {
         if (b is null) return delta == 0;
         assert(_brkInitial && _brkCurrent); // otherwise where did b come from?
@@ -700,7 +700,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
     }
 
     /// Ditto
-    Ternary owns(void[] b) shared
+    static Ternary owns(void[] b)
     {
         // No need to lock here.
         assert(!_brkCurrent || b.ptr + b.length <= _brkCurrent);
@@ -715,7 +715,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
     must be the last block allocated.
 
     */
-    bool deallocate(void[] b) shared
+    static bool deallocate(void[] b)
     {
         static if (minAlign > 1)
             const rounded = b.length.roundUpToMultipleOf(alignment);
@@ -737,7 +737,7 @@ version(Posix) struct SbrkRegion(uint minAlign = platformAlignment)
     that support reducing the  break address (i.e. accept calls to $(D sbrk)
     with negative offsets). OSX does not accept such.
     */
-    bool deallocateAll() shared
+    static bool deallocateAll()
     {
         pthread_mutex_lock(cast(pthread_mutex_t*) &sbrkMutex) == 0 || assert(0);
         scope(exit) pthread_mutex_unlock(cast(pthread_mutex_t*) &sbrkMutex) == 0

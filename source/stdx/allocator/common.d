@@ -347,7 +347,7 @@ defined. This is deliberate so allocators may use it internally within their own
 implementation of $(D reallocate).
 
 */
-bool reallocate(Allocator)(ref Allocator a, ref void[] b, size_t s)
+bool reallocate(Allocator)(auto ref Allocator a, ref void[] b, size_t s)
 {
     if (b.length == s) return true;
     static if (hasMember!(Allocator, "expand"))
@@ -378,7 +378,7 @@ defined. This is deliberate so allocators may use it internally within their own
 implementation of $(D reallocate).
 
 */
-bool alignedReallocate(Allocator)(ref Allocator alloc,
+bool alignedReallocate(Allocator)(auto ref Allocator alloc,
         ref void[] b, size_t s, uint a)
 {
     static if (hasMember!(Allocator, "expand"))

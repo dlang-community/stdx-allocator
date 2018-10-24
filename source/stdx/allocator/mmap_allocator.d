@@ -17,7 +17,7 @@ managed by fine-granular allocators.
 struct MmapAllocator
 {
     /// The one shared instance.
-    static shared MmapAllocator instance;
+    enum MmapAllocator instance = MmapAllocator();
 
     /**
     Alignment is page-size and hardcoded to 4096 (even though on certain systems
@@ -28,7 +28,7 @@ struct MmapAllocator
     version(Posix)
     {
         /// Allocator API.
-        void[] allocate(size_t bytes) shared
+        static void[] allocate(size_t bytes)
         {
             import core.sys.posix.sys.mman : mmap, MAP_ANON, PROT_READ,
                 PROT_WRITE, MAP_PRIVATE, MAP_FAILED;
@@ -40,7 +40,7 @@ struct MmapAllocator
         }
 
         /// Ditto
-        bool deallocate(void[] b) shared
+        static bool deallocate(void[] b)
         {
             import core.sys.posix.sys.mman : munmap;
             if (b.ptr) munmap(b.ptr, b.length) == 0 || assert(0);
@@ -53,7 +53,7 @@ struct MmapAllocator
             PAGE_READWRITE, MEM_RELEASE;
 
         /// Allocator API.
-        void[] allocate(size_t bytes) shared
+        static void[] allocate(size_t bytes)
         {
             if (!bytes) return null;
             auto p = VirtualAlloc(null, bytes, MEM_COMMIT, PAGE_READWRITE);
@@ -63,7 +63,7 @@ struct MmapAllocator
         }
 
         /// Ditto
-        bool deallocate(void[] b) shared
+        static bool deallocate(void[] b)
         {
             return b.ptr is null || VirtualFree(b.ptr, 0, MEM_RELEASE) != 0;
         }

@@ -43,7 +43,7 @@ struct FallbackAllocator(Primary, Fallback)
     */
     static if (!stateSize!Primary && !stateSize!Fallback)
     {
-        static FallbackAllocator instance;
+        enum FallbackAllocator instance = FallbackAllocator();
     }
 
     /**
@@ -125,7 +125,7 @@ struct FallbackAllocator(Primary, Fallback)
     static if (hasMember!(Primary, "owns"))
     bool reallocate(ref void[] b, size_t newSize)
     {
-        bool crossAllocatorMove(From, To)(ref From from, ref To to)
+        bool crossAllocatorMove(From, To)(auto ref From from, auto ref To to)
         {
             auto b1 = to.allocate(newSize);
             if (b1.length != newSize) return false;
@@ -153,7 +153,7 @@ struct FallbackAllocator(Primary, Fallback)
             || hasMember!(Fallback, "alignedAllocate")))
     bool alignedReallocate(ref void[] b, size_t newSize, uint a)
     {
-        bool crossAllocatorMove(From, To)(ref From from, ref To to)
+        bool crossAllocatorMove(From, To)(auto ref From from, auto ref To to)
         {
             static if (!hasMember!(To, "alignedAllocate"))
             {
