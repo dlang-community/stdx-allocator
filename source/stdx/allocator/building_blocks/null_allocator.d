@@ -20,44 +20,44 @@ struct NullAllocator
     //size_t goodAllocSize(size_t n) shared const
     //{ return .goodAllocSize(this, n); }
     /// Always returns $(D null).
-    static void[] allocate(size_t) { return null; }
+    static void[] allocate()(size_t) { return null; }
     /// Always returns $(D null).
-    static void[] alignedAllocate(size_t, uint) { return null; }
+    static void[] alignedAllocate()(size_t, uint) { return null; }
     /// Always returns $(D null).
-    static void[] allocateAll() { return null; }
+    static void[] allocateAll()() { return null; }
     /**
     These methods return $(D false).
     Precondition: $(D b is null). This is because there is no other possible
     legitimate input.
     */
-    static bool expand(ref void[] b, size_t s)
+    static bool expand()(ref void[] b, size_t s)
     { assert(b is null); return s == 0; }
     /// Ditto
-    static bool reallocate(ref void[] b, size_t)
+    static bool reallocate()(ref void[] b, size_t)
     { assert(b is null); return false; }
     /// Ditto
-    static bool alignedReallocate(ref void[] b, size_t, uint)
+    static bool alignedReallocate()(ref void[] b, size_t, uint)
     { assert(b is null); return false; }
     /// Returns $(D Ternary.no).
-    static Ternary owns(void[]) { return Ternary.no; }
+    static Ternary owns()(void[]) { return Ternary.no; }
     /**
     Returns $(D Ternary.no).
     */
-    static Ternary resolveInternalPointer(const void*, ref void[])
+    static Ternary resolveInternalPointer()(const void*, ref void[])
     { return Ternary.no; }
     /**
     No-op.
     Precondition: $(D b is null)
     */
-    static bool deallocate(void[] b) { assert(b is null); return true; }
+    static bool deallocate()(void[] b) { assert(b is null); return true; }
     /**
     No-op.
     */
-    static bool deallocateAll() { return true; }
+    static bool deallocateAll()() { return true; }
     /**
     Returns $(D Ternary.yes).
     */
-    static Ternary empty() { return Ternary.yes; }
+    static Ternary empty()() { return Ternary.yes; }
     /**
     Returns the $(D static) global instance of the $(D NullAllocator).
     */
@@ -75,7 +75,7 @@ struct NullAllocator
     assert(!NullAllocator.instance.reallocate(b, 42));
     assert(!NullAllocator.instance.alignedReallocate(b, 42, 0));
     NullAllocator.instance.deallocate(b);
-    NullAllocator.instance.deallocateAll();
+    assert(NullAllocator.instance.deallocateAll() == true);
 
     import stdx.allocator.internal : Ternary;
     assert(NullAllocator.instance.empty() == Ternary.yes);

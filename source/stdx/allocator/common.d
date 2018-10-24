@@ -92,7 +92,7 @@ size_t goodAllocSize(A)(auto ref A a, size_t n)
 Returns s rounded up to a multiple of base.
 */
 @safe @nogc nothrow pure
-package size_t roundUpToMultipleOf(size_t s, uint base)
+package size_t roundUpToMultipleOf()(size_t s, uint base)
 {
     assert(base);
     auto rem = s % base;
@@ -112,7 +112,7 @@ unittest
 Returns `n` rounded up to a multiple of alignment, which must be a power of 2.
 */
 @safe @nogc nothrow pure
-package size_t roundUpToAlignment(size_t n, uint alignment)
+package size_t roundUpToAlignment()(size_t n, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -137,7 +137,7 @@ unittest
 Returns `n` rounded down to a multiple of alignment, which must be a power of 2.
 */
 @safe @nogc nothrow pure
-package size_t roundDownToAlignment(size_t n, uint alignment)
+package size_t roundDownToAlignment()(size_t n, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -159,7 +159,7 @@ may therefore be shorter. Returns the adjusted buffer, or null if obtaining a
 non-empty buffer is impossible.
 */
 @nogc nothrow pure
-package void[] roundUpToAlignment(void[] b, uint a)
+package void[] roundUpToAlignment()(void[] b, uint a)
 {
     auto e = b.ptr + b.length;
     auto p = cast(void*) roundUpToAlignment(cast(size_t) b.ptr, a);
@@ -191,7 +191,7 @@ package size_t divideRoundUp(size_t a, size_t b)
 Returns `s` rounded up to a multiple of `base`.
 */
 @nogc nothrow pure
-package void[] roundStartToMultipleOf(void[] s, uint base)
+package void[] roundStartToMultipleOf()(void[] s, uint base)
 {
     assert(base);
     auto p = cast(void*) roundUpToMultipleOf(
@@ -213,7 +213,7 @@ nothrow pure
 Returns $(D s) rounded up to the nearest power of 2.
 */
 @safe @nogc nothrow pure
-package size_t roundUpToPowerOf2(size_t s)
+package size_t roundUpToPowerOf2()(size_t s)
 {
     import std.meta : AliasSeq;
     assert(s <= (size_t.max >> 1) + 1);
@@ -250,7 +250,7 @@ unittest
 Returns the number of trailing zeros of $(D x).
 */
 @safe @nogc nothrow pure
-package uint trailingZeros(ulong x)
+package uint trailingZeros()(ulong x)
 {
     uint result;
     while (result < 64 && !(x & (1UL << result)))
@@ -284,7 +284,7 @@ Returns the effective alignment of `ptr`, i.e. the largest power of two that is
 a divisor of `ptr`.
 */
 @nogc nothrow pure
-package uint effectiveAlignment(void* ptr)
+package uint effectiveAlignment()(void* ptr)
 {
     return 1U << trailingZeros(cast(size_t) ptr);
 }
@@ -301,7 +301,7 @@ Aligns a pointer down to a specified alignment. The resulting pointer is less
 than or equal to the given pointer.
 */
 @nogc nothrow pure
-package void* alignDownTo(void* ptr, uint alignment)
+package void* alignDownTo()(void* ptr, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -313,7 +313,7 @@ Aligns a pointer up to a specified alignment. The resulting pointer is greater
 than or equal to the given pointer.
 */
 @nogc nothrow pure
-package void* alignUpTo(void* ptr, uint alignment)
+package void* alignUpTo()(void* ptr, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -322,14 +322,14 @@ package void* alignUpTo(void* ptr, uint alignment)
 }
 
 @safe @nogc nothrow pure
-package bool isGoodStaticAlignment(uint x)
+package bool isGoodStaticAlignment()(uint x)
 {
     import stdx.allocator.internal : isPowerOf2;
     return x.isPowerOf2;
 }
 
 @safe @nogc nothrow pure
-package bool isGoodDynamicAlignment(uint x)
+package bool isGoodDynamicAlignment()(uint x)
 {
     import stdx.allocator.internal : isPowerOf2;
     return x.isPowerOf2 && x >= (void*).sizeof;
@@ -409,9 +409,17 @@ Forwards each of the methods in `funs` (if defined) to `member`.
     {
         result ~= "
     static if (hasMember!(typeof("~member~"), `"~fun~"`))
-    auto ref "~fun~"(Parameters!(typeof("~member~"."~fun~")) args)
     {
-        return "~member~"."~fun~"(args);
+        static if (__traits(isTemplate, "~member~"."~fun~"))
+        auto ref "~fun~"(Parameters!(typeof("~member~"."~fun~"!())) args)
+        {
+            return "~member~"."~fun~"(args);
+        }
+        else
+        auto ref "~fun~"(Parameters!(typeof("~member~"."~fun~")) args)
+        {
+            return "~member~"."~fun~"(args);
+        }
     }\n";
     }
     return result;

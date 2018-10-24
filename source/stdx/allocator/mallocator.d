@@ -23,7 +23,7 @@ struct Mallocator
     programs that can afford to leak memory allocated.
     */
     @trusted @nogc nothrow
-    static void[] allocate(size_t bytes)
+    static void[] allocate()(size_t bytes)
     {
         import core.stdc.stdlib : malloc;
         if (!bytes) return null;
@@ -33,7 +33,7 @@ struct Mallocator
 
     /// Ditto
     @system @nogc nothrow
-    static bool deallocate(void[] b)
+    static bool deallocate()(void[] b)
     {
         import core.stdc.stdlib : free;
         free(b.ptr);
@@ -42,7 +42,7 @@ struct Mallocator
 
     /// Ditto
     @system @nogc nothrow
-    static bool reallocate(ref void[] b, size_t s)
+    static bool reallocate()(ref void[] b, size_t s)
     {
         import core.stdc.stdlib : realloc;
         if (!s)
@@ -124,14 +124,14 @@ version (Windows)
             size_t size;
 
             @nogc nothrow
-            static AlignInfo* opCall(void* ptr)
+            static AlignInfo* opCall()(void* ptr)
             {
                 return cast(AlignInfo*) (ptr - AlignInfo.sizeof);
             }
         }
 
         @nogc nothrow
-        private void* _aligned_malloc(size_t size, size_t alignment)
+        private void* _aligned_malloc()(size_t size, size_t alignment)
         {
             import core.stdc.stdlib : malloc;
             size_t offset = alignment + size_t.sizeof * 2 - 1;
@@ -153,7 +153,7 @@ version (Windows)
         }
 
         @nogc nothrow
-        private void* _aligned_realloc(void* ptr, size_t size, size_t alignment)
+        private void* _aligned_realloc()(void* ptr, size_t size, size_t alignment)
         {
             import core.stdc.stdlib : free;
             import core.stdc.string : memcpy;
@@ -180,7 +180,7 @@ version (Windows)
         }
 
         @nogc nothrow
-        private void _aligned_free(void *ptr)
+        private void _aligned_free()(void *ptr)
         {
             import core.stdc.stdlib : free;
             if (!ptr) return;
@@ -214,7 +214,7 @@ struct AlignedMallocator
     Forwards to $(D alignedAllocate(bytes, platformAlignment)).
     */
     @trusted @nogc nothrow
-    static void[] allocate(size_t bytes)
+    static void[] allocate()(size_t bytes)
     {
         if (!bytes) return null;
         return alignedAllocate(bytes, alignment);
@@ -228,7 +228,7 @@ struct AlignedMallocator
     */
     version(Posix)
     @trusted @nogc nothrow
-    static void[] alignedAllocate(size_t bytes, uint a)
+    static void[] alignedAllocate()(size_t bytes, uint a)
     {
         import core.stdc.errno : ENOMEM, EINVAL;
         assert(a.isGoodDynamicAlignment);
@@ -250,7 +250,7 @@ struct AlignedMallocator
     }
     else version(Windows)
     @trusted @nogc nothrow
-    static void[] alignedAllocate(size_t bytes, uint a)
+    static void[] alignedAllocate()(size_t bytes, uint a)
     {
         auto result = _aligned_malloc(bytes, a);
         return result ? result[0 .. bytes] : null;
@@ -264,7 +264,7 @@ struct AlignedMallocator
     */
     version (Posix)
     @system @nogc nothrow
-    static bool deallocate(void[] b)
+    static bool deallocate()(void[] b)
     {
         import core.stdc.stdlib : free;
         free(b.ptr);
@@ -272,7 +272,7 @@ struct AlignedMallocator
     }
     else version (Windows)
     @system @nogc nothrow
-    static bool deallocate(void[] b)
+    static bool deallocate()(void[] b)
     {
         _aligned_free(b.ptr);
         return true;
@@ -285,13 +285,13 @@ struct AlignedMallocator
     */
     version (Posix)
     @system @nogc nothrow
-    static bool reallocate(ref void[] b, size_t newSize)
+    static bool reallocate()(ref void[] b, size_t newSize)
     {
         return Mallocator.instance.reallocate(b, newSize);
     }
     version (Windows)
     @system @nogc nothrow
-    static bool reallocate(ref void[] b, size_t newSize)
+    static bool reallocate()(ref void[] b, size_t newSize)
     {
         return alignedReallocate(b, newSize, alignment);
     }
@@ -304,7 +304,7 @@ struct AlignedMallocator
     */
     version (Windows)
     @system @nogc nothrow
-    static bool alignedReallocate(ref void[] b, size_t s, uint a)
+    static bool alignedReallocate()(ref void[] b, size_t s, uint a)
     {
         if (!s)
         {
