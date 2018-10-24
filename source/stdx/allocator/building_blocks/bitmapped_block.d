@@ -45,7 +45,6 @@ block size to the constructor.
 struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment,
     ParentAllocator = NullAllocator)
 {
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
     import std.typecons : tuple, Tuple;
 
@@ -197,7 +196,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     deallocate), the destructor is defined to deallocate the block held.
     */
     static if (!is(ParentAllocator == NullAllocator)
-        && hasMember!(ParentAllocator, "deallocate"))
+        && __traits(hasMember, ParentAllocator, "deallocate"))
     ~this()
     {
         auto start = _control.rep.ptr, end = cast(ulong*)(_payload.ptr + _payload.length);
@@ -691,10 +690,9 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 {
     // Create a block allocator on top of a 10KB stack region.
     import stdx.allocator.building_blocks.region : InSituRegion;
-    import std.traits : hasMember;
     InSituRegion!(10_240, 64) r;
     auto a = BitmappedBlock!(64, 64)(cast(ubyte[])(r.allocateAll()));
-    static assert(hasMember!(InSituRegion!(10_240, 64), "allocateAll"));
+    static assert(__traits(hasMember, InSituRegion!(10_240, 64), "allocateAll"));
     const b = a.allocate(100);
     assert(b.length == 100);
 }

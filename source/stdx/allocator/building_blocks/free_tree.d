@@ -224,7 +224,7 @@ struct FreeTree(ParentAllocator)
     The destructor of $(D FreeTree) releases all memory back to the parent
     allocator.
     */
-    static if (hasMember!(ParentAllocator, "deallocate"))
+    static if (__traits(hasMember, ParentAllocator, "deallocate"))
     ~this()
     {
         clear;
@@ -272,7 +272,7 @@ struct FreeTree(ParentAllocator)
         if (result.ptr) return result.ptr[0 .. n];
 
         // Parent ran out of juice, desperation mode on
-        static if (hasMember!(ParentAllocator, "deallocate"))
+        static if (__traits(hasMember, ParentAllocator, "deallocate"))
         {
             clear;
             // Try parent allocator again.
@@ -327,7 +327,7 @@ struct FreeTree(ParentAllocator)
 
     /** Defined if $(D ParentAllocator.deallocate) exists, and returns to it
     all memory held in the free tree. */
-    static if (hasMember!(ParentAllocator, "deallocate"))
+    static if (__traits(hasMember, ParentAllocator, "deallocate"))
     void clear()
     {
         void recurse(Node* n)
@@ -348,7 +348,7 @@ struct FreeTree(ParentAllocator)
     stil managed by the free tree).
 
     */
-    static if (hasMember!(ParentAllocator, "deallocateAll"))
+    static if (__traits(hasMember, ParentAllocator, "deallocateAll"))
     bool deallocateAll()
     {
         // This is easy, just nuke the root and deallocate all from the

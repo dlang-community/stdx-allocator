@@ -10,7 +10,6 @@ module stdx.allocator.showcase;
 import stdx.allocator.building_blocks.fallback_allocator,
     stdx.allocator.gc_allocator,
     stdx.allocator.building_blocks.region;
-import std.traits : hasMember;
 
 /**
 
@@ -21,7 +20,7 @@ then falls back to $(D Allocator). Defined as:
 alias StackFront(size_t stackSize, Allocator) =
     FallbackAllocator!(
         InSituRegion!(stackSize, Allocator.alignment,
-            hasMember!(Allocator, "deallocate")
+            __traits(hasMember, Allocator, "deallocate")
                 ? Yes.defineDeallocate
                 : No.defineDeallocate),
         Allocator);

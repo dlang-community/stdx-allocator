@@ -158,7 +158,6 @@ struct StatsCollector(Allocator, ulong flags = Options.all,
     ulong perCallFlags = 0)
 {
 private:
-    import std.traits : hasMember, Signed;
     import stdx.allocator.internal : Ternary;
 
     static string define(string type, string[] names...)
@@ -172,7 +171,7 @@ private:
         return result;
     }
 
-    void add(string counter)(Signed!size_t n)
+    void add(string counter)(sizediff_t n)
     {
         mixin("static if (flags & Options." ~ counter
             ~ ") _" ~ counter ~ " += n;");
@@ -283,7 +282,7 @@ public:
     Increments $(D numOwns) (per instance and and per call) and forwards to $(D
     parent.owns(b)).
     */
-    static if (hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "owns"))
     {
         static if ((perCallFlags & Options.numOwns) == 0)
         Ternary owns(void[] b)
@@ -357,8 +356,8 @@ public:
     private bool expandImpl(string f = null, uint n = 0)(ref void[] b, size_t s)
     {
         up!"numExpand";
-        Signed!size_t slack = 0;
-        static if (!hasMember!(Allocator, "expand"))
+        sizediff_t slack = 0;
+        static if (!__traits(hasMember, Allocator, "expand"))
         {
             auto result = s == 0;
         }
@@ -372,7 +371,7 @@ public:
                 add!"bytesUsed"(s);
                 add!"bytesAllocated"(s);
                 add!"bytesExpanded"(s);
-                slack = Signed!size_t(this.goodAllocSize(b.length) - b.length
+                slack = sizediff_t(this.goodAllocSize(b.length) - b.length
                     - bytesSlackB4);
                 add!"bytesSlack"(slack);
             }
@@ -419,16 +418,16 @@ public:
 
         const result = parent.reallocate(b, s);
 
-        Signed!size_t slack = 0;
+        sizediff_t slack = 0;
         bool wasInPlace = false;
-        Signed!size_t delta = 0;
+        sizediff_t delta = 0;
 
         if (result)
         {
             up!"numReallocateOK";
             slack = (this.goodAllocSize(b.length) - b.length) - bytesSlackB4;
             add!"bytesSlack"(slack);
-            add!"bytesUsed"(Signed!size_t(b.length - oldLength));
+            add!"bytesUsed"(sizediff_t(b.length - oldLength));
             if (oldB == b.ptr)
             {
                 // This was an in-place reallocation, yay
@@ -480,16 +479,16 @@ public:
     private bool deallocateImpl(string f = null, uint n = 0)(void[] b)
     {
         up!"numDeallocate";
-        add!"bytesUsed"(-Signed!size_t(b.length));
+        add!"bytesUsed"(-sizediff_t(b.length));
         add!"bytesSlack"(-(this.goodAllocSize(b.length) - b.length));
         addPerCall!(f, n, "numDeallocate", "bytesContracted")(1, b.length);
-        static if (hasMember!(Allocator, "deallocate"))
+        static if (__traits(hasMember, Allocator, "deallocate"))
             return parent.deallocate(b);
         else
             return false;
     }
 
-    static if (hasMember!(Allocator, "deallocateAll"))
+    static if (__traits(hasMember, Allocator, "deallocateAll"))
     {
         /**
         Defined only if $(D Allocator.deallocateAll) is defined. Affects

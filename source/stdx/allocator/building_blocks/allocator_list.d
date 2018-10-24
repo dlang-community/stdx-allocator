@@ -67,7 +67,6 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     import stdx.allocator.internal : emplace;
     import stdx.allocator.building_blocks.stats_collector
         : StatsCollector, Options;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     private enum ouroboros = is(BookkeepingAllocator == NullAllocator);
@@ -142,8 +141,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
         factory = plant;
     }
 
-    static if (hasMember!(Allocator, "deallocateAll")
-        && hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "deallocateAll")
+        && __traits(hasMember, Allocator, "owns"))
     ~this()
     {
         deallocateAll;
@@ -236,8 +235,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
         // Free the olden buffer
         static if (ouroboros)
         {
-            static if (hasMember!(Allocator, "deallocate")
-                    && hasMember!(Allocator, "owns"))
+            static if (__traits(hasMember, Allocator, "deallocate")
+                    && __traits(hasMember, Allocator, "owns"))
                 deallocate(toFree);
         }
         else
@@ -250,8 +249,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     private Node* addAllocator(size_t atLeastBytes)
     {
         void[] t = allocators;
-        static if (hasMember!(Allocator, "expand")
-            && hasMember!(Allocator, "owns"))
+        static if (__traits(hasMember, Allocator, "expand")
+            && __traits(hasMember, Allocator, "owns"))
         {
             immutable bool expanded = t && this.expand(t, Node.sizeof);
         }
@@ -303,7 +302,7 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     private Node* addAllocator(size_t atLeastBytes)
     {
         void[] t = allocators;
-        static if (hasMember!(BookkeepingAllocator, "expand"))
+        static if (__traits(hasMember, BookkeepingAllocator, "expand"))
             immutable bool expanded = bkalloc.expand(t, Node.sizeof);
         else
             immutable bool expanded = false;
@@ -348,7 +347,7 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     `Ternary.unknown` if no allocator returned `Ternary.yes` and at least one
     returned  `Ternary.unknown`.
     */
-    static if (hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "owns"))
     Ternary owns(void[] b)
     {
         auto result = Ternary.no;
@@ -377,8 +376,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     and calls $(D expand) for it. The owner is not brought to the head of the
     list.
     */
-    static if (hasMember!(Allocator, "expand")
-        && hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "expand")
+        && __traits(hasMember, Allocator, "owns"))
     bool expand(ref void[] b, size_t delta)
     {
         if (!b.ptr) return delta == 0;
@@ -394,7 +393,7 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     $(D b) and calls $(D reallocate) for it. If that fails, calls the global
     $(D reallocate), which allocates a new block and moves memory.
     */
-    static if (hasMember!(Allocator, "reallocate"))
+    static if (__traits(hasMember, Allocator, "reallocate"))
     bool reallocate(ref void[] b, size_t s)
     {
         // First attempt to reallocate within the existing node
@@ -414,8 +413,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     /**
      Defined if $(D Allocator.deallocate) and $(D Allocator.owns) are defined.
     */
-    static if (hasMember!(Allocator, "deallocate")
-        && hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "deallocate")
+        && __traits(hasMember, Allocator, "owns"))
     bool deallocate(void[] b)
     {
         if (!b.ptr) return true;
@@ -457,8 +456,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     Defined only if $(D Allocator.owns) and $(D Allocator.deallocateAll) are
     defined.
     */
-    static if (ouroboros && hasMember!(Allocator, "deallocateAll")
-        && hasMember!(Allocator, "owns"))
+    static if (ouroboros && __traits(hasMember, Allocator, "deallocateAll")
+        && __traits(hasMember, Allocator, "owns"))
     bool deallocateAll()
     {
         Node* special;
@@ -483,8 +482,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
         return true;
     }
 
-    static if (!ouroboros && hasMember!(Allocator, "deallocateAll")
-        && hasMember!(Allocator, "owns"))
+    static if (!ouroboros && __traits(hasMember, Allocator, "deallocateAll")
+        && __traits(hasMember, Allocator, "owns"))
     bool deallocateAll()
     {
         foreach (ref n; allocators)

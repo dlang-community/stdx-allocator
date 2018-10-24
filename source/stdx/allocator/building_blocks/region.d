@@ -33,7 +33,6 @@ struct Region(ParentAllocator = NullAllocator,
     static assert(minAlign.isGoodStaticAlignment);
     static assert(ParentAllocator.alignment >= minAlign);
 
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     // state
@@ -98,7 +97,7 @@ struct Region(ParentAllocator = NullAllocator,
     memory chunk.
     */
     static if (!is(ParentAllocator == NullAllocator)
-        && hasMember!(ParentAllocator, "deallocate"))
+        && __traits(hasMember, ParentAllocator, "deallocate"))
     ~this()
     {
         parent.deallocate(_begin[0 .. _end - _begin]);
@@ -491,7 +490,7 @@ struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
     Expands an allocated block in place. Expansion will succeed only if the
     block is the last allocated.
     */
-    static if (hasMember!(typeof(_impl), "expand"))
+    static if (__traits(hasMember, typeof(_impl), "expand"))
     bool expand(ref void[] b, size_t delta)
     {
         if (!_impl._current) lazyInit;

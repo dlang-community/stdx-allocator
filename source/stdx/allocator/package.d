@@ -2018,8 +2018,7 @@ if (!isPointer!A)
     else static if (is(typeof({ A b = a; A c = b; }))) // copyable
     {
         auto state = a.allocate(stateSize!(CAllocatorImpl!A));
-        import std.traits : hasMember;
-        static if (hasMember!(A, "deallocate"))
+        static if (__traits(hasMember, A, "deallocate"))
         {
             scope(failure) a.deallocate(state);
         }
@@ -2045,8 +2044,7 @@ CAllocatorImpl!(A, Yes.indirect) allocatorObject(A)(A* pa)
     assert(pa);
     import stdx.allocator.internal : emplace;
     auto state = pa.allocate(stateSize!(CAllocatorImpl!(A, Yes.indirect)));
-    import std.traits : hasMember;
-    static if (hasMember!(A, "deallocate"))
+    static if (__traits(hasMember, A, "deallocate"))
     {
         scope(failure) pa.deallocate(state);
     }
@@ -2113,8 +2111,7 @@ if (!isPointer!A)
     else static if (is(typeof({ shared A b = a; shared A c = b; }))) // copyable
     {
         auto state = a.allocate(stateSize!(CSharedAllocatorImpl!A));
-        import std.traits : hasMember;
-        static if (hasMember!(A, "deallocate"))
+        static if (__traits(hasMember, A, "deallocate"))
         {
             scope(failure) a.deallocate(state);
         }
@@ -2132,8 +2129,7 @@ shared(CSharedAllocatorImpl!(A, Yes.indirect)) sharedAllocatorObject(A)(A* pa)
     assert(pa);
     import stdx.allocator.internal : emplace;
     auto state = pa.allocate(stateSize!(CSharedAllocatorImpl!(A, Yes.indirect)));
-    import std.traits : hasMember;
-    static if (hasMember!(A, "deallocate"))
+    static if (__traits(hasMember, A, "deallocate"))
     {
         scope(failure) pa.deallocate(state);
     }
@@ -2152,7 +2148,6 @@ Usually `CAllocatorImpl` is used indirectly by calling $(LREF theAllocator).
 class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     : IAllocator
 {
-    import std.traits : hasMember;
 
     /**
     The implementation is available as a public member.
@@ -2203,7 +2198,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override void[] alignedAllocate(size_t s, uint a)
     {
-        static if (hasMember!(Allocator, "alignedAllocate"))
+        static if (__traits(hasMember, Allocator, "alignedAllocate"))
             return impl.alignedAllocate(s, a);
         else
             return null;
@@ -2215,14 +2210,14 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override Ternary owns(void[] b)
     {
-        static if (hasMember!(Allocator, "owns")) return impl.owns(b);
+        static if (__traits(hasMember, Allocator, "owns")) return impl.owns(b);
         else return Ternary.unknown;
     }
 
     /// Returns $(D impl.expand(b, s)) if defined, `false` otherwise.
     override bool expand(ref void[] b, size_t s)
     {
-        static if (hasMember!(Allocator, "expand"))
+        static if (__traits(hasMember, Allocator, "expand"))
             return impl.expand(b, s);
         else
             return s == 0;
@@ -2237,7 +2232,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     /// Forwards to `impl.alignedReallocate` if defined, `false` otherwise.
     bool alignedReallocate(ref void[] b, size_t s, uint a)
     {
-        static if (!hasMember!(Allocator, "alignedAllocate"))
+        static if (!__traits(hasMember, Allocator, "alignedAllocate"))
         {
             return false;
         }
@@ -2250,7 +2245,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     // Undocumented for now
     Ternary resolveInternalPointer(const void* p, ref void[] result)
     {
-        static if (hasMember!(Allocator, "resolveInternalPointer"))
+        static if (__traits(hasMember, Allocator, "resolveInternalPointer"))
         {
             return impl.resolveInternalPointer(p, result);
         }
@@ -2266,7 +2261,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override bool deallocate(void[] b)
     {
-        static if (hasMember!(Allocator, "deallocate"))
+        static if (__traits(hasMember, Allocator, "deallocate"))
         {
             return impl.deallocate(b);
         }
@@ -2282,7 +2277,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override bool deallocateAll()
     {
-        static if (hasMember!(Allocator, "deallocateAll"))
+        static if (__traits(hasMember, Allocator, "deallocateAll"))
         {
             return impl.deallocateAll();
         }
@@ -2297,7 +2292,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override Ternary empty()
     {
-        static if (hasMember!(Allocator, "empty"))
+        static if (__traits(hasMember, Allocator, "empty"))
         {
             return Ternary(impl.empty);
         }
@@ -2312,7 +2307,7 @@ class CAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override void[] allocateAll()
     {
-        static if (hasMember!(Allocator, "allocateAll"))
+        static if (__traits(hasMember, Allocator, "allocateAll"))
         {
             return impl.allocateAll();
         }
@@ -2335,7 +2330,6 @@ $(LREF processAllocator).
 class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     : ISharedAllocator
 {
-    import std.traits : hasMember;
 
     /**
     The implementation is available as a public member.
@@ -2386,7 +2380,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override void[] alignedAllocate(size_t s, uint a) shared
     {
-        static if (hasMember!(Allocator, "alignedAllocate"))
+        static if (__traits(hasMember, Allocator, "alignedAllocate"))
             return impl.alignedAllocate(s, a);
         else
             return null;
@@ -2398,14 +2392,14 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override Ternary owns(void[] b) shared
     {
-        static if (hasMember!(Allocator, "owns")) return impl.owns(b);
+        static if (__traits(hasMember, Allocator, "owns")) return impl.owns(b);
         else return Ternary.unknown;
     }
 
     /// Returns $(D impl.expand(b, s)) if defined, `false` otherwise.
     override bool expand(ref void[] b, size_t s) shared
     {
-        static if (hasMember!(Allocator, "expand"))
+        static if (__traits(hasMember, Allocator, "expand"))
             return impl.expand(b, s);
         else
             return s == 0;
@@ -2420,7 +2414,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     /// Forwards to `impl.alignedReallocate` if defined, `false` otherwise.
     bool alignedReallocate(ref void[] b, size_t s, uint a) shared
     {
-        static if (!hasMember!(Allocator, "alignedAllocate"))
+        static if (!__traits(hasMember, Allocator, "alignedAllocate"))
         {
             return false;
         }
@@ -2433,7 +2427,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     // Undocumented for now
     Ternary resolveInternalPointer(const void* p, ref void[] result) shared
     {
-        static if (hasMember!(Allocator, "resolveInternalPointer"))
+        static if (__traits(hasMember, Allocator, "resolveInternalPointer"))
         {
             return impl.resolveInternalPointer(p, result);
         }
@@ -2449,7 +2443,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override bool deallocate(void[] b) shared
     {
-        static if (hasMember!(Allocator, "deallocate"))
+        static if (__traits(hasMember, Allocator, "deallocate"))
         {
             return impl.deallocate(b);
         }
@@ -2465,7 +2459,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override bool deallocateAll() shared
     {
-        static if (hasMember!(Allocator, "deallocateAll"))
+        static if (__traits(hasMember, Allocator, "deallocateAll"))
         {
             return impl.deallocateAll();
         }
@@ -2480,7 +2474,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override Ternary empty() shared
     {
-        static if (hasMember!(Allocator, "empty"))
+        static if (__traits(hasMember, Allocator, "empty"))
         {
             return Ternary(impl.empty);
         }
@@ -2495,7 +2489,7 @@ class CSharedAllocatorImpl(Allocator, Flag!"indirect" indirect = No.indirect)
     */
     override void[] allocateAll() shared
     {
-        static if (hasMember!(Allocator, "allocateAll"))
+        static if (__traits(hasMember, Allocator, "allocateAll"))
         {
             return impl.allocateAll();
         }
@@ -2588,7 +2582,7 @@ unittest
     static assert(!is(ThreadLocal!GCAllocator));
     alias ThreadLocal!(FreeList!(GCAllocator, 0, 8)) Allocator;
     auto b = Allocator.instance.allocate(5);
-    static assert(hasMember!(Allocator, "allocate"));
+    static assert(__traits(hasMember, Allocator, "allocate"));
 }
 
 /*
@@ -2851,7 +2845,7 @@ private struct InternalPointersTree(Allocator)
     }
 
     /// Ditto
-    static if (hasMember!(Allocator, "reallocate"))
+    static if (__traits(hasMember, Allocator, "reallocate"))
     bool reallocate(ref void[] b, size_t s)
     {
         auto n = &parent.prefix(b);
