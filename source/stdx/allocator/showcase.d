@@ -61,7 +61,7 @@ auto mmapRegionList(size_t bytesPerRegion)
     static struct Factory
     {
         size_t bytesPerRegion;
-        import std.algorithm.comparison : max;
+        import mir.utility : max;
         import stdx.allocator.building_blocks.region
             : Region;
         import stdx.allocator.mmap_allocator

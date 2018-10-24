@@ -14,7 +14,7 @@ shared) methods.
 */
 struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
 {
-    import std.algorithm.comparison : min;
+    import mir.utility : min;
     import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 

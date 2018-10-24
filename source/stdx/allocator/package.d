@@ -229,7 +229,7 @@ public import stdx.allocator.common,
 // Example in the synopsis above
 @system unittest
 {
-    import std.algorithm.comparison : min, max;
+    import mir.utility : min, max;
     import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
     import stdx.allocator.building_blocks.bitmapped_block
@@ -248,10 +248,10 @@ public import stdx.allocator.common,
         1024, Bucketizer!(FList, 513, 1024, 128),
         2048, Bucketizer!(FList, 1025, 2048, 256),
         3584, Bucketizer!(FList, 2049, 3584, 512),
-        4072 * 1024, AllocatorList!(
+        4072u * 1024, AllocatorList!(
             (n) => BitmappedBlock!(4096)(
                     cast(ubyte[])(GCAllocator.instance.allocate(
-                        max(n, 4072 * 1024))))),
+                        max(n, 4072u * 1024))))),
         GCAllocator
     );
     A tuMalloc;
@@ -662,9 +662,9 @@ propagates the exception.
 */
 auto make(T, Allocator, A...)(auto ref Allocator alloc, auto ref A args)
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.internal : emplace, emplaceRef;
-    auto m = alloc.allocate(max(stateSize!T, 1));
+    auto m = alloc.allocate(max(stateSize!T, size_t(1)));
     if (!m.ptr) return null;
 
     // make can only be @safe if emplace or emplaceRef is `pure`
@@ -899,7 +899,7 @@ nothrow @safe @nogc unittest
 private void fillWithMemcpy(T)(void[] array, auto ref T filler) nothrow
 {
     import core.stdc.string : memcpy;
-    import std.algorithm.comparison : min;
+    import mir.utility : min;
     if (!array.length) return;
     memcpy(array.ptr, &filler, T.sizeof);
     // Fill the array from the initialized portion of itself exponentially.
@@ -1005,21 +1005,20 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length)
 
 @system unittest
 {
-    import std.algorithm.comparison : equal;
     auto a = theAllocator.makeArray!(shared int)(5);
     static assert(is(typeof(a) == shared(int)[]));
     assert(a.length == 5);
-    assert(a.equal([0, 0, 0, 0, 0]));
+    assert(cast(int[])a == [0, 0, 0, 0, 0]);
 
     auto b = theAllocator.makeArray!(const int)(5);
     static assert(is(typeof(b) == const(int)[]));
     assert(b.length == 5);
-    assert(b.equal([0, 0, 0, 0, 0]));
+    assert(cast(int[])b == [0, 0, 0, 0, 0]);
 
     auto c = theAllocator.makeArray!(immutable int)(5);
     static assert(is(typeof(c) == immutable(int)[]));
     assert(c.length == 5);
-    assert(c.equal([0, 0, 0, 0, 0]));
+    assert(cast(int[])c == [0, 0, 0, 0, 0]);
 }
 
 private enum hasPurePostblit(T) = !hasElaborateCopyConstructor!T ||
@@ -1078,16 +1077,15 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
 ///
 @system unittest
 {
-    import std.algorithm.comparison : equal;
     static void test(T)()
     {
         T[] a = theAllocator.makeArray!T(2);
-        assert(a.equal([0, 0]));
+        assert(cast(int[])a == [0, 0]);
         a = theAllocator.makeArray!T(3, 42);
-        assert(a.equal([42, 42, 42]));
+        assert(cast(int[])a == [42, 42, 42]);
         import std.range : only;
         a = theAllocator.makeArray!T(only(42, 43, 44));
-        assert(a.equal([42, 43, 44]));
+        assert(cast(int[])a == [42, 43, 44]);
     }
     test!int();
     test!(shared int)();
@@ -2990,9 +2988,9 @@ unittest
         1024, Bucketizer!(FList, 513, 1024, 128),
         2048, Bucketizer!(FList, 1025, 2048, 256),
         3584, Bucketizer!(FList, 2049, 3584, 512),
-        4072 * 1024, AllocatorList!(
+        4072u * 1024, AllocatorList!(
             (size_t n) => BitmappedBlock!(4096)(GCAllocator.instance.allocate(
-                max(n, 4072 * 1024)))),
+                max(n, 4072u * 1024)))),
         GCAllocator
     );
 
@@ -3045,9 +3043,9 @@ unittest
             1024, Bucketizer!(FList, 513, 1024, 128),
             2048, Bucketizer!(FList, 1025, 2048, 256),
             3584, Bucketizer!(FList, 2049, 3584, 512),
-            4072 * 1024, AllocatorList!(
+            4072u * 1024, AllocatorList!(
                 (n) => BitmappedBlock!(4096)(GCAllocator.instance.allocate(
-                    max(n, 4072 * 1024)))),
+                    max(n, 4072u * 1024)))),
             GCAllocator
         )
     );

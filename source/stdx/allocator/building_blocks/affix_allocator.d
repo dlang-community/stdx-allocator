@@ -19,7 +19,7 @@ The following methods are defined if $(D Allocator) defines them, and forward to
  */
 struct AffixAllocator(Allocator, Prefix, Suffix = void)
 {
-    import std.algorithm.comparison : min;
+    import mir.utility : min;
     import std.conv : emplace;
     import stdx.allocator : IAllocator, theAllocator;
     import stdx.allocator.common : stateSize, forwardToMember,

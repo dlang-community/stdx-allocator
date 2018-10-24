@@ -329,14 +329,14 @@ struct Region(ParentAllocator = NullAllocator,
 ///
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
     import stdx.allocator.mallocator : Mallocator;
     // Create a scalable list of regions. Each gets at least 1MB at a time by
     // using malloc.
     auto batchAllocator = AllocatorList!(
-        (size_t n) => Region!Mallocator(max(n, 1024 * 1024))
+        (size_t n) => Region!Mallocator(max(n, 1024u * 1024))
     )();
     auto b = batchAllocator.allocate(101);
     assert(b.length == 101);
@@ -375,7 +375,7 @@ hot memory is used first.
 */
 struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import std.conv : to;
     import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;

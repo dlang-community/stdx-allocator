@@ -220,7 +220,7 @@ struct Bucketizer(Allocator, size_t min, size_t max, size_t step)
 ///
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.allocator_list : AllocatorList;
     import stdx.allocator.building_blocks.free_list : FreeList;
     import stdx.allocator.building_blocks.region : Region;
@@ -230,7 +230,7 @@ struct Bucketizer(Allocator, size_t min, size_t max, size_t step)
     Bucketizer!(
         FreeList!(
             AllocatorList!(
-                (size_t n) => Region!Mallocator(max(n, 1024 * 1024))),
+                (size_t n) => Region!Mallocator(max(n, 1024u * 1024))),
             0, unbounded),
         65, 512, 64) a;
     auto b = a.allocate(400);

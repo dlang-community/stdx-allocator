@@ -76,7 +76,7 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
     Alias for `typeof(Factory()(1))`, i.e. the type of the individual
     allocators.
     */
-    alias Allocator = typeof(Factory.init(1));
+    alias Allocator = typeof(Factory.init(size_t(1)));
     // Allocator used internally
     private alias SAllocator = StatsCollector!(Allocator, Options.bytesUsed);
 
@@ -513,7 +513,7 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
 template AllocatorList(alias factoryFunction,
     BookkeepingAllocator = GCAllocator)
 {
-    alias A = typeof(factoryFunction(1));
+    alias A = typeof(factoryFunction(size_t(1)));
     static assert(
         // is a template function (including literals)
         is(typeof({A function(size_t) @system x = factoryFunction!size_t;}))
@@ -535,7 +535,7 @@ template AllocatorList(alias factoryFunction,
 ///
 version(Posix) @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.free_list : ContiguousFreeList;
     import stdx.allocator.building_blocks.null_allocator : NullAllocator;
     import stdx.allocator.building_blocks.region : Region;
@@ -545,17 +545,17 @@ version(Posix) @system unittest
 
     // Ouroboros allocator list based upon 4MB regions, fetched directly from
     // mmap. All memory is released upon destruction.
-    alias A1 = AllocatorList!((n) => Region!MmapAllocator(max(n, 1024 * 4096)),
+    alias A1 = AllocatorList!((n) => Region!MmapAllocator(max(n, 1024u * 4096u)),
         NullAllocator);
 
     // Allocator list based upon 4MB regions, fetched from the garbage
     // collector. All memory is released upon destruction.
-    alias A2 = AllocatorList!((n) => Region!GCAllocator(max(n, 1024 * 4096)));
+    alias A2 = AllocatorList!((n) => Region!GCAllocator(max(n, 1024u * 4096u)));
 
     // Ouroboros allocator list based upon 4MB regions, fetched from the garbage
     // collector. Memory is left to the collector.
     alias A3 = AllocatorList!(
-        (n) => Region!NullAllocator(new ubyte[max(n, 1024 * 4096)]),
+        (n) => Region!NullAllocator(new ubyte[max(n, 1024u * 4096u)]),
         NullAllocator);
 
     // Allocator list that creates one freelist for all objects
@@ -579,9 +579,9 @@ version(Posix) @system unittest
 @system unittest
 {
     // Create an allocator based upon 4MB regions, fetched from the GC heap.
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.region : Region;
-    AllocatorList!((n) => Region!GCAllocator(new ubyte[max(n, 1024 * 4096)]),
+    AllocatorList!((n) => Region!GCAllocator(new ubyte[max(n, 1024u * 4096u)]),
         NullAllocator) a;
     const b1 = a.allocate(1024 * 8192);
     assert(b1 !is null); // still works due to overdimensioning
@@ -593,9 +593,9 @@ version(Posix) @system unittest
 @system unittest
 {
     // Create an allocator based upon 4MB regions, fetched from the GC heap.
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.region : Region;
-    AllocatorList!((n) => Region!()(new ubyte[max(n, 1024 * 4096)])) a;
+    AllocatorList!((n) => Region!()(new ubyte[max(n, 1024u * 4096u)])) a;
     auto b1 = a.allocate(1024 * 8192);
     assert(b1 !is null); // still works due to overdimensioning
     b1 = a.allocate(1024 * 10);
@@ -605,10 +605,10 @@ version(Posix) @system unittest
 
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.region : Region;
     import stdx.allocator.internal : Ternary;
-    AllocatorList!((n) => Region!()(new ubyte[max(n, 1024 * 4096)])) a;
+    AllocatorList!((n) => Region!()(new ubyte[max(n, 1024u * 4096u)])) a;
     auto b1 = a.allocate(1024 * 8192);
     assert(b1 !is null);
     b1 = a.allocate(1024 * 10);

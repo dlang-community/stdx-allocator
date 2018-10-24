@@ -6,7 +6,7 @@ appropriate parts of `std`.
 Authors: $(HTTP erdani.com, Andrei Alexandrescu), Timon Gehr (`Ternary`)
 */
 module stdx.allocator.common;
-import std.algorithm.comparison, std.traits;
+import mir.utility, std.traits;
 
 /**
 Returns the size in bytes of the state that needs to be allocated to hold an
@@ -77,7 +77,7 @@ enum unbounded = size_t.max;
 The alignment that is guaranteed to accommodate any D object allocation on the
 current platform.
 */
-enum uint platformAlignment = std.algorithm.comparison.max(double.alignof, real.alignof);
+enum uint platformAlignment = mir.utility.max(double.alignof, real.alignof);
 
 /**
 The default good size allocation is deduced as $(D n) rounded up to the

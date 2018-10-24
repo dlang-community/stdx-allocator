@@ -639,17 +639,17 @@ it actually returns memory to the operating system when possible.
 */
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
     import stdx.allocator.gc_allocator : GCAllocator;
     import stdx.allocator.mmap_allocator : MmapAllocator;
-    AllocatorList!(n => KRRegion!MmapAllocator(max(n * 16, 1024 * 1024))) alloc;
+    AllocatorList!(n => KRRegion!MmapAllocator(max(n * 16, 1024u * 1024))) alloc;
 }
 
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
     import stdx.allocator.gc_allocator : GCAllocator;
@@ -660,7 +660,7 @@ it actually returns memory to the operating system when possible.
     from the garbage-collected heap. Each block is organized as a KR-style
     heap. More blocks are allocated and freed on a need basis.
     */
-    AllocatorList!(n => KRRegion!Mallocator(max(n * 16, 1024 * 1024)),
+    AllocatorList!(n => KRRegion!Mallocator(max(n * 16, 1024u * 1024)),
         NullAllocator) alloc;
     void[][50] array;
     foreach (i; 0 .. array.length)
@@ -682,7 +682,7 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
     import stdx.allocator.gc_allocator : GCAllocator;
@@ -694,7 +694,7 @@ it actually returns memory to the operating system when possible.
     heap. More blocks are allocated and freed on a need basis.
     */
     AllocatorList!((n) {
-        auto result = KRRegion!MmapAllocator(max(n * 2, 1024 * 1024));
+        auto result = KRRegion!MmapAllocator(max(n * 2, 1024u * 1024));
         return result;
     }) alloc;
     void[][99] array;
@@ -720,20 +720,20 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
-    import std.algorithm.comparison : max;
+    import mir.utility : max;
     import stdx.allocator.building_blocks.allocator_list
         : AllocatorList;
     import stdx.allocator.common : testAllocator;
     import stdx.allocator.gc_allocator : GCAllocator;
     testAllocator!(() => AllocatorList!(
-        n => KRRegion!GCAllocator(max(n * 16, 1024 * 1024)))());
+        n => KRRegion!GCAllocator(max(n * 16, 1024u * 1024)))());
 }
 
 @system unittest
 {
     import stdx.allocator.gc_allocator : GCAllocator;
 
-    auto alloc = KRRegion!GCAllocator(1024 * 1024);
+    auto alloc = KRRegion!GCAllocator(1024u * 1024);
 
     void[][] array;
     foreach (i; 1 .. 4)
@@ -744,7 +744,7 @@ it actually returns memory to the operating system when possible.
     alloc.deallocate(array[1]);
     alloc.deallocate(array[0]);
     alloc.deallocate(array[2]);
-    assert(alloc.allocateAll().length == 1024 * 1024);
+    assert(alloc.allocateAll().length == 1024u * 1024);
 }
 
 @system unittest
@@ -752,7 +752,7 @@ it actually returns memory to the operating system when possible.
     import stdx.allocator.gc_allocator : GCAllocator;
     import stdx.allocator.internal : Ternary;
     auto alloc = KRRegion!()(
-                    cast(ubyte[])(GCAllocator.instance.allocate(1024 * 1024)));
+                    cast(ubyte[])(GCAllocator.instance.allocate(1024u * 1024)));
     const store = alloc.allocate(KRRegion!().sizeof);
     auto p = cast(KRRegion!()* ) store.ptr;
     import core.stdc.string : memcpy;
@@ -778,19 +778,19 @@ it actually returns memory to the operating system when possible.
         p.deallocate(array[i]);
     }
     auto b = p.allocateAll();
-    assert(b.length == 1024 * 1024 - KRRegion!().sizeof, text(b.length));
+    assert(b.length == 1024u * 1024 - KRRegion!().sizeof, text(b.length));
 }
 
 @system unittest
 {
     import stdx.allocator.gc_allocator : GCAllocator;
     auto alloc = KRRegion!()(
-                    cast(ubyte[])(GCAllocator.instance.allocate(1024 * 1024)));
+                    cast(ubyte[])(GCAllocator.instance.allocate(1024u * 1024)));
     auto p = alloc.allocateAll();
-    assert(p.length == 1024 * 1024);
+    assert(p.length == 1024u * 1024);
     alloc.deallocateAll();
     p = alloc.allocateAll();
-    assert(p.length == 1024 * 1024);
+    assert(p.length == 1024u * 1024);
 }
 
 @system unittest
