@@ -529,14 +529,13 @@ public:
     */
     void reportStatistics(R)(auto ref R output)
     {
-        import std.conv : to;
-        import std.traits : EnumMembers;
-        foreach (e; EnumMembers!Options)
-        {
+        foreach (member; __traits(allMembers, Options))
+        {{
+            enum e = __traits(getMember, Options, member);
             static if ((flags & e) && e != Options.numAll
                     && e != Options.bytesAll && e != Options.all)
-                output.write(e.to!string, ":", mixin(e.to!string), '\n');
-        }
+                output.write(member, ":", e, '\n');
+        }}
     }
 
     static if (perCallFlags)
@@ -561,7 +560,7 @@ public:
             Format to a string such as:
             $(D mymodule.d(655): [numAllocate:21, numAllocateOK:21, bytesAllocated:324202]).
             */
-            string toString() const
+            string toString()() const
             {
                 import std.conv : text, to;
                 auto result = text(file, "(", line, "): [");
@@ -611,11 +610,7 @@ public:
 
         private PerCallStatistics* statsAt(string f, uint n, opts...)()
         {
-            import std.array : array;
-            import std.range : repeat;
-
-            static PerCallStatistics s = { f, n, [ opts ],
-                repeat(0UL, opts.length).array };
+            static PerCallStatistics s = { f, n, [ opts ], new ulong[opts.length] };
             static bool inserted;
 
             if (!inserted)

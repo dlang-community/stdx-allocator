@@ -537,7 +537,7 @@ private IAllocator setupThreadAllocator()() nothrow @nogc @safe
     }
 
     assert(!_threadAllocator);
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     static ulong[stateSize!(ThreadAllocator).divideRoundUp(ulong.sizeof)] _threadAllocatorState;
     _threadAllocator = () @trusted { return emplace!(ThreadAllocator)(_threadAllocatorState[]); } ();
     return _threadAllocator;
@@ -1060,7 +1060,7 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
                 }
             }
         }
-        import std.conv : emplace;
+        import stdx.allocator.internal : emplace;
         for (; i < length; ++i)
         {
             emplace!T(&result[i], init);
@@ -1583,7 +1583,7 @@ if (isInputRange!R)
         for (; !range.empty; range.popFront, toFill.popFront)
         {
             assert(!toFill.empty);
-            import std.conv : emplace;
+            import stdx.allocator.internal : emplace;
             emplace!T(&toFill.front, range.front);
         }
         assert(toFill.empty);
@@ -1603,7 +1603,7 @@ if (isInputRange!R)
                 array = cast(T[]) buf;
                 return false;
             }
-            import std.conv : emplace;
+            import stdx.allocator.internal : emplace;
             emplace!T(buf[$ - T.sizeof .. $], range.front);
         }
 
@@ -2001,7 +2001,7 @@ statically-typed allocator.)
 CAllocatorImpl!A allocatorObject(A)(auto ref A a)
 if (!isPointer!A)
 {
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     static if (stateSize!A == 0)
     {
         enum s = stateSize!(CAllocatorImpl!A).divideRoundUp(ulong.sizeof);
@@ -2043,7 +2043,7 @@ if (!isPointer!A)
 CAllocatorImpl!(A, Yes.indirect) allocatorObject(A)(A* pa)
 {
     assert(pa);
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     auto state = pa.allocate(stateSize!(CAllocatorImpl!(A, Yes.indirect)));
     import std.traits : hasMember;
     static if (hasMember!(A, "deallocate"))
@@ -2095,7 +2095,7 @@ statically-typed allocator.)
 shared(CSharedAllocatorImpl!A) sharedAllocatorObject(A)(auto ref A a)
 if (!isPointer!A)
 {
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     static if (stateSize!A == 0)
     {
         enum s = stateSize!(CSharedAllocatorImpl!A).divideRoundUp(ulong.sizeof);
@@ -2130,7 +2130,7 @@ if (!isPointer!A)
 shared(CSharedAllocatorImpl!(A, Yes.indirect)) sharedAllocatorObject(A)(A* pa)
 {
     assert(pa);
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     auto state = pa.allocate(stateSize!(CSharedAllocatorImpl!(A, Yes.indirect)));
     import std.traits : hasMember;
     static if (hasMember!(A, "deallocate"))

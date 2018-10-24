@@ -181,7 +181,7 @@ package void[] roundUpToAlignment()(void[] b, uint a)
 Like `a / b` but rounds the result up, not down.
 */
 @safe @nogc nothrow pure
-package size_t divideRoundUp(size_t a, size_t b)
+package size_t divideRoundUp()(size_t a, size_t b)
 {
     assert(b);
     return (a + b - 1) / b;

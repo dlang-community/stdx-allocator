@@ -45,7 +45,6 @@ block size to the constructor.
 struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment,
     ParentAllocator = NullAllocator)
 {
-    import std.conv : text;
     import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
     import std.typecons : tuple, Tuple;
@@ -117,7 +116,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     {
         alias parent = ParentAllocator.instance;
     }
-    private uint _blocks;
+    private size_t _blocks;
     private BitVector _control;
     private void[] _payload;
     private size_t _startIdx;
@@ -162,8 +161,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         immutable ulong totalBits = data.length * 8;
         immutable ulong bitsPerBlock = blockSize * 8 + 1;
         // Get a first estimate
-        import std.conv : to;
-        _blocks = to!uint(totalBits / bitsPerBlock);
+        _blocks = cast(size_t)(totalBits / bitsPerBlock);
 
         // Reality is a bit more complicated, iterate until a good number of
         // blocks found.
@@ -424,7 +422,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 
     private void[] smallAlloc(uint blocks)
     {
-        assert(blocks >= 2 && blocks <= 64, text(blocks));
+        assert(blocks >= 2 && blocks <= 64);
         foreach (i; _startIdx .. _control.rep.length)
         {
             // Test within the current 64-bit word
@@ -526,8 +524,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
             return false;
         }
         // Expansion successful
-        assert(p.ptr == b.ptr + blocksOld * blockSize,
-            text(p.ptr, " != ", b.ptr + blocksOld * blockSize));
+        assert(p.ptr == b.ptr + blocksOld * blockSize);
         b = b.ptr[0 .. b.length + delta];
         return true;
     }
@@ -710,7 +707,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 
 @system unittest
 {
-    static void testAllocateAll(size_t bs)(uint blocks, uint blocksAtATime)
+    static void testAllocateAll(size_t bs)(size_t blocks, uint blocksAtATime)
     {
         import mir.utility : min;
         assert(bs);
@@ -859,7 +856,6 @@ struct BitmappedBlockWithInternalPointers(
     size_t theBlockSize, uint theAlignment = platformAlignment,
     ParentAllocator = NullAllocator)
 {
-    import std.conv : text;
     import stdx.allocator.internal : Ternary;
     @system unittest
     {
@@ -902,7 +898,7 @@ struct BitmappedBlockWithInternalPointers(
         immutable bits = len.roundUpToMultipleOf(64);
         void[] b = _allocStart.rep;
         if (!_heap.reallocate(b, bits / 8)) return false;
-        assert(b.length * 8 == bits, text(b.length * 8, " != ", bits));
+        assert(b.length * 8 == bits);
         _allocStart = BitVector(cast(ulong[]) b);
         assert(_allocStart.rep.length * 64 == bits);
         _allocStart.rep[oldLength .. $] = ulong.max;

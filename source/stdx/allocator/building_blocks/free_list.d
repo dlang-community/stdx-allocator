@@ -28,7 +28,6 @@ struct FreeList(ParentAllocator,
     size_t minSize, size_t maxSize = minSize,
     Flag!"adaptive" adaptive = No.adaptive)
 {
-    import std.conv : text;
     import std.exception : enforce;
     import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
@@ -242,9 +241,7 @@ struct FreeList(ParentAllocator,
         {
             if (freeListEligible(bytes))
             {
-                assert(parent.goodAllocSize(max) == max,
-                    text("Wrongly configured freelist: maximum should be ",
-                        parent.goodAllocSize(max), " instead of ", max));
+                assert(parent.goodAllocSize(max) == max, "Wrongly configured freelist maximum value");
                 return max;
             }
         }
@@ -633,8 +630,7 @@ struct ContiguousFreeList(ParentAllocator,
         if (support.ptr <= b.ptr && b.ptr < support.ptr + support.length)
         {
             // we own this guy
-            import std.conv : text;
-            assert(fl.freeListEligible(b.length), text(b.length));
+            assert(fl.freeListEligible(b.length));
             assert(allocated);
             --allocated;
             // Put manually in the freelist
@@ -754,7 +750,6 @@ $(D expand) is defined to forward to $(D ParentAllocator.expand)
 struct SharedFreeList(ParentAllocator,
     size_t minSize, size_t maxSize = minSize, size_t approxMaxNodes = unbounded)
 {
-    import std.conv : text;
     import std.exception : enforce;
     import std.traits : hasMember;
 

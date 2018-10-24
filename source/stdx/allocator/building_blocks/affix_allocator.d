@@ -20,7 +20,7 @@ The following methods are defined if $(D Allocator) defines them, and forward to
 struct AffixAllocator(Allocator, Prefix, Suffix = void)
 {
     import mir.utility : min;
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
     import stdx.allocator : IAllocator, theAllocator;
     import stdx.allocator.common : stateSize, forwardToMember,
         roundUpToMultipleOf, alignedAt, alignDownTo, roundUpToMultipleOf,

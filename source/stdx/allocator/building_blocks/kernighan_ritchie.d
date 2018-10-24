@@ -757,7 +757,7 @@ it actually returns memory to the operating system when possible.
     auto p = cast(KRRegion!()* ) store.ptr;
     import core.stdc.string : memcpy;
     import std.algorithm.mutation : move;
-    import std.conv : emplace;
+    import stdx.allocator.internal : emplace;
 
     memcpy(p, &alloc, alloc.sizeof);
     emplace(&alloc);

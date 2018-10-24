@@ -141,35 +141,6 @@ struct FreeTree(ParentAllocator)
         recurse(root);
     }
 
-    private string formatSizes()
-    {
-        string result = "(";
-        void recurse(Node* n)
-        {
-            if (!n)
-            {
-                result ~= "_";
-                return;
-            }
-            import std.conv : to;
-            result ~= to!string(n.size);
-            for (auto sis = n.sibling; sis; sis = sis.sibling)
-            {
-                result ~= "+moar";
-            }
-            if (n.left || n.right)
-            {
-                result ~= " (";
-                recurse(n.left);
-                result ~= ' ';
-                recurse(n.right);
-                result ~= ")";
-            }
-        }
-        recurse(root);
-        return result ~= ")";
-    }
-
     private static void rotate(ref Node* parent, bool toRight)
     {
         assert(parent);
@@ -330,27 +301,6 @@ struct FreeTree(ParentAllocator)
         assert(which.size >= Node.sizeof);
         insertAsRoot(which);
         return true;
-    }
-
-    @system unittest // test a few simple configurations
-    {
-        import stdx.allocator.gc_allocator;
-        FreeTree!GCAllocator a;
-        auto b1 = a.allocate(10000);
-        auto b2 = a.allocate(20000);
-        auto b3 = a.allocate(30000);
-        assert(b1.ptr && b2.ptr && b3.ptr);
-        a.deallocate(b1);
-        a.deallocate(b3);
-        a.deallocate(b2);
-        assert(a.formatSizes == "(20480 (12288 32768))", a.formatSizes);
-
-        b1 = a.allocate(10000);
-        assert(a.formatSizes == "(20480 (_ 32768))", a.formatSizes);
-        b1 = a.allocate(30000);
-        assert(a.formatSizes == "(20480)", a.formatSizes);
-        b1 = a.allocate(20000);
-        assert(a.formatSizes == "(_)", a.formatSizes);
     }
 
     @system unittest // build a complex free tree

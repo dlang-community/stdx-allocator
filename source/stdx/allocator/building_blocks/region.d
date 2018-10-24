@@ -376,7 +376,6 @@ hot memory is used first.
 struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
 {
     import mir.utility : max;
-    import std.conv : to;
     import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
@@ -567,8 +566,8 @@ struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
     InSituRegion!(4096, 1) r1;
     auto a = r1.allocate(2001);
     assert(a.length == 2001);
-    import std.conv : text;
-    assert(r1.available == 2095, text(r1.available));
+    import std.conv : to;
+    assert(r1.available == 2095, r1.available.to!string);
 
     InSituRegion!(65_536, 1024*4) r2;
     assert(r2.available <= 65_536);
