@@ -53,8 +53,6 @@ struct FreeTree(ParentAllocator)
         "FreeTree must be on top of a word-aligned allocator");
 
     import mir.utility : min, max;
-    import std.algorithm.mutation : swap;
-    import std.traits : hasMember;
 
     // State
     static if (stateSize!ParentAllocator) private ParentAllocator parent;

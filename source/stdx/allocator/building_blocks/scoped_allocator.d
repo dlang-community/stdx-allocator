@@ -209,12 +209,13 @@ struct ScopedAllocator(ParentAllocator)
 
 @system unittest // https://issues.dlang.org/show_bug.cgi?id=16046
 {
-    import std.exception;
     import stdx.allocator;
     import stdx.allocator.mallocator;
     ScopedAllocator!Mallocator alloc;
-    auto foo = alloc.make!int(1).enforce;
-    auto bar = alloc.make!int(2).enforce;
+    auto foo = alloc.make!int(1);
+    auto bar = alloc.make!int(2);
+    assert(foo);
+    assert(bar);
     alloc.dispose(foo);
     alloc.dispose(bar); // segfault here
 }
