@@ -686,7 +686,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
 }
 
 ///
-@system unittest
+@nogc @system unittest
 {
     // Create a block allocator on top of a 10KB stack region.
     import stdx.allocator.building_blocks.region : InSituRegion;
@@ -1089,7 +1089,7 @@ struct BitmappedBlockWithInternalPointers(
 Returns the number of most significant ones before a zero can be found in $(D
 x). If $(D x) contains no zeros (i.e. is equal to $(D ulong.max)), returns 64.
 */
-private uint leadingOnes(ulong x)
+private uint leadingOnes()(ulong x)
 {
     uint result = 0;
     while (cast(long) x < 0)
@@ -1114,7 +1114,7 @@ private uint leadingOnes(ulong x)
 /**
 Finds a run of contiguous ones in $(D x) of length at least $(D n).
 */
-private uint findContigOnes(ulong x, uint n)
+private uint findContigOnes()(ulong x, uint n)
 {
     while (n > 1)
     {
@@ -1142,7 +1142,7 @@ private uint findContigOnes(ulong x, uint n)
 /*
 Unconditionally sets the bits from lsb through msb in w to zero.
 */
-private void setBits(ref ulong w, uint lsb, uint msb)
+private void setBits()(ref ulong w, uint lsb, uint msb)
 {
     assert(lsb <= msb && msb < 64);
     const mask = (ulong.max << lsb) & (ulong.max >> (63 - msb));
@@ -1161,7 +1161,7 @@ private void setBits(ref ulong w, uint lsb, uint msb)
 /* Are bits from lsb through msb in w zero? If so, make then 1
 and return the resulting w. Otherwise, just return 0.
 */
-private bool setBitsIfZero(ref ulong w, uint lsb, uint msb)
+private bool setBitsIfZero()(ref ulong w, uint lsb, uint msb)
 {
     assert(lsb <= msb && msb < 64);
     const mask = (ulong.max << lsb) & (ulong.max >> (63 - msb));
@@ -1171,7 +1171,7 @@ private bool setBitsIfZero(ref ulong w, uint lsb, uint msb)
 }
 
 // Assigns bits in w from lsb through msb to zero.
-private void resetBits(ref ulong w, uint lsb, uint msb)
+private void resetBits()(ref ulong w, uint lsb, uint msb)
 {
     assert(lsb <= msb && msb < 64);
     const mask = (ulong.max << lsb) & (ulong.max >> (63 - msb));
@@ -1184,6 +1184,8 @@ Bit disposition is MSB=0 (leftmost, big endian).
 private struct BitVector
 {
     ulong[] _rep;
+
+@safe pure nothrow @nogc:
 
     auto rep() { return _rep; }
 
