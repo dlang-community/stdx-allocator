@@ -111,7 +111,7 @@ struct FreeTree(ParentAllocator)
     }
 
     debug(std_experimental_allocator_free_tree)
-    private void dump()
+    private void dump()()
     {
         import std.stdio : writef, writefln, writeln;
         writeln(typeof(this).stringof, "@", &this, " {");

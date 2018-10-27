@@ -46,7 +46,9 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     ParentAllocator = NullAllocator)
 {
     import stdx.allocator.internal : Ternary;
-    import std.typecons : tuple, Tuple;
+    import mir.functional : RefTuple;
+    // for internal API only
+    private alias Tuple = RefTuple!(size_t, uint);
 
     @system unittest
     {
@@ -361,7 +363,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
     it succeeds, fills "result" with the result and returns tuple(size_t.max,
     0). Otherwise, returns a tuple with the next position to search.
     */
-    private Tuple!(size_t, uint) allocateAt(size_t wordIdx, uint msbIdx,
+    private Tuple allocateAt(size_t wordIdx, uint msbIdx,
             size_t blocks, ref void[] result)
     {
         assert(blocks > 0);
@@ -375,12 +377,12 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
             {
                 // Success
                 result = blocksFor(wordIdx, msbIdx, blocks);
-                return tuple(size_t.max, 0u);
+                return Tuple(size_t.max, 0u);
             }
             // Can't allocate, make a suggestion
             return msbIdx + blocks == 64
-                ? tuple(wordIdx + 1, 0u)
-                : tuple(wordIdx, cast(uint) (msbIdx + blocks));
+                ? Tuple(wordIdx + 1, 0u)
+                : Tuple(wordIdx, cast(uint) (msbIdx + blocks));
         }
         // Allocation spans two control words or more
         immutable mask = ulong.max >> msbIdx;
@@ -388,14 +390,14 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         {
             // We can't allocate the rest of this control word,
             // return a suggestion.
-            return tuple(wordIdx + 1, 0u);
+            return Tuple(wordIdx + 1, 0u);
         }
         // We can allocate the rest of this control word, but we first need to
         // make sure we can allocate the tail.
         if (wordIdx + 1 == _control.rep.length)
         {
             // No more memory
-            return tuple(_control.rep.length, 0u);
+            return Tuple(_control.rep.length, 0u);
         }
         auto hint = allocateAt(wordIdx + 1, 0, blocks - 64 + msbIdx, result);
         if (hint[0] == size_t.max)
@@ -403,7 +405,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
             // We did it!
             _control.rep[wordIdx] |= mask;
             result = blocksFor(wordIdx, msbIdx, blocks);
-            return tuple(size_t.max, 0u);
+            return Tuple(size_t.max, 0u);
         }
         // Failed, return a suggestion that skips this whole run.
         return hint;
@@ -649,7 +651,8 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         return Ternary(_control.allAre0());
     }
 
-    void dump()
+    debug(std_experimental_allocator_bitmapped_block)
+    void dump()()
     {
         import std.stdio : writefln, writeln;
         writefln("%s @ %s {", typeid(this), cast(void*) _control._rep.ptr);
@@ -1091,13 +1094,11 @@ x). If $(D x) contains no zeros (i.e. is equal to $(D ulong.max)), returns 64.
 */
 private uint leadingOnes()(ulong x)
 {
-    uint result = 0;
-    while (cast(long) x < 0)
-    {
-        ++result;
-        x <<= 1;
-    }
-    return result;
+    import mir.bitop: ctlz;
+    x = ~x;
+    if (x)
+        return cast(uint) x.ctlz;
+    return 64;
 }
 
 @system unittest

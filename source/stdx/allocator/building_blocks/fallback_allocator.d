@@ -271,51 +271,6 @@ struct FallbackAllocator(Primary, Fallback)
     a.deallocate(b2);
 }
 
-/*
-Forwards an argument from one function to another
-*/
-private auto ref forward(alias arg)()
-{
-    static if (__traits(isRef, arg))
-    {
-        return arg;
-    }
-    else
-    {
-        import std.algorithm.mutation : move;
-        return move(arg);
-    }
-}
-
-@safe unittest
-{
-    void fun(T)(auto ref T, string) { /* ... */ }
-    void gun(T...)(auto ref T args)
-    {
-        fun(forward!(args[0]), forward!(args[1]));
-    }
-    gun(42, "hello");
-    int x;
-    gun(x, "hello");
-}
-
-@safe unittest
-{
-    static void checkByRef(T)(auto ref T value)
-    {
-        static assert(__traits(isRef, value));
-    }
-
-    static void checkByVal(T)(auto ref T value)
-    {
-        static assert(!__traits(isRef, value));
-    }
-
-    static void test1(ref int a) { checkByRef(forward!a); }
-    static void test2(int a) { checkByVal(forward!a); }
-    static void test3() { int a; checkByVal(forward!a); }
-}
-
 /**
 Convenience function that uses type deduction to return the appropriate
 $(D FallbackAllocator) instance. To initialize with allocators that don't have
@@ -324,6 +279,8 @@ state, use their $(D it) static member.
 FallbackAllocator!(Primary, Fallback)
 fallbackAllocator(Primary, Fallback)(auto ref Primary p, auto ref Fallback f)
 {
+    import mir.functional: forward;
+
     alias R = FallbackAllocator!(Primary, Fallback);
 
     static if (stateSize!Primary)
