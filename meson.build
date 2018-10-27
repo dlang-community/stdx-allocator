@@ -1,10 +1,14 @@
 project('stdx-allocator', 'd',
     meson_version: '>=0.45',
     license: 'BSL-1.0',
-    version: '2.77.2'
+    version: '3.0.1'
 )
 
 project_soversion = '0'
+
+mir_core_dep = dependency('mir-core', fallback : ['mir-core', 'mir_core_dep'])
+
+required_deps = [mir_core_dep]
 
 pkgc = import('pkgconfig')
 
@@ -43,38 +47,44 @@ src_dir = include_directories('source/')
 # Targets
 #
 allocator_lib = library('stdx-allocator',
-        [allocator_src],
-        include_directories: [src_dir],
-        install: true,
-        version: meson.project_version(),
-        soversion: project_soversion
-)
-
-pkgc.generate(name: 'stdx-allocator',
-              libraries: [allocator_lib],
-              subdirs: 'd/stdx-allocator',
-              version: meson.project_version(),
-              description: 'High-level interface for allocators for D, extracted from Phobos.'
-)
-
-# for use by Vibe.d and others which embed this as subproject
-allocator_dep = declare_dependency(
-    link_with: [allocator_lib],
-    include_directories: [src_dir]
+	[allocator_src],
+	include_directories: [src_dir],
+	install: true,
+	version: meson.project_version(),
+	soversion: project_soversion,
+	dependencies: required_deps,
 )
 
 #
 # Tests
 #
-allocator_test_exe = executable('test_allocator',
-    [allocator_src],
-    include_directories: [src_dir],
+allocator_test_exe = executable(meson.project_name() + '-test',
+    allocator_src,
+    include_directories: src_dir,
     d_unittest: true,
-    link_args: '-main'
+    link_args: '-main',
+	dependencies: required_deps,
+
 )
-test('test_allocator', allocator_test_exe)
+
+# for use by Vibe.d and others which embed this as subproject
+allocator_dep = declare_dependency(
+    link_with: allocator_lib,
+    include_directories: src_dir,
+    dependencies: required_deps,
+)
 
 #
 # Install
 #
 install_subdir('source/stdx/', install_dir: 'include/d/stdx-allocator/')
+
+
+pkgc.generate(name: 'stdx-allocator',
+	libraries: allocator_lib,
+    subdirs: 'd/' + meson.project_name(),
+	version: meson.project_version(),
+	description: 'High-level interface for allocators for D, extracted from Phobos.'
+)
+
+test(meson.project_name() + '-test', allocator_test_exe)
