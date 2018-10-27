@@ -3,7 +3,6 @@ module stdx.allocator.building_blocks.kernighan_ritchie;
 import stdx.allocator.building_blocks.null_allocator;
 
 //debug = KRRegion;
-version(unittest) import std.conv : text;
 debug(KRRegion) import std.stdio;
 
 // KRRegion
@@ -100,7 +99,9 @@ struct KRRegion(ParentAllocator = NullAllocator)
 
     private static struct Node
     {
-        import std.typecons : tuple, Tuple;
+        import mir.functional : RefTuple;
+
+        alias Tuple = RefTuple!(void[], Node*);
 
         Node* next;
         size_t size;
@@ -135,7 +136,7 @@ struct KRRegion(ParentAllocator = NullAllocator)
             return true;
         }
 
-        Tuple!(void[], Node*) allocateHere(size_t bytes)
+        Tuple allocateHere(size_t bytes)
         {
             assert(bytes >= Node.sizeof);
             assert(bytes % Node.alignof == 0);
@@ -152,11 +153,11 @@ struct KRRegion(ParentAllocator = NullAllocator)
                 newNode.size = leftover;
                 newNode.next = next == &this ? newNode : next;
                 assert(next);
-                return tuple(payload, newNode);
+                return Tuple(payload, newNode);
             }
 
             // No slack space, just return next node
-            return tuple(payload, next == &this ? null : next);
+            return Tuple(payload, next == &this ? null : next);
         }
     }
 
@@ -192,7 +193,7 @@ struct KRRegion(ParentAllocator = NullAllocator)
         return Range(root, root);
     }
 
-    string toString()
+    string toString()()
     {
         import std.format : format;
         string s = "KRRegion@";
@@ -748,6 +749,7 @@ it actually returns memory to the operating system when possible.
 
 @system unittest
 {
+    import std.conv : text;
     import stdx.allocator.gc_allocator : GCAllocator;
     import stdx.allocator.internal : Ternary;
     auto alloc = KRRegion!()(
@@ -756,7 +758,7 @@ it actually returns memory to the operating system when possible.
     auto p = cast(KRRegion!()* ) store.ptr;
     import core.stdc.string : memcpy;
     import std.algorithm.mutation : move;
-    import stdx.allocator.internal : emplace;
+    import mir.conv : emplace;
 
     memcpy(p, &alloc, alloc.sizeof);
     emplace(&alloc);

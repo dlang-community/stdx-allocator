@@ -537,7 +537,7 @@ private IAllocator setupThreadAllocator()() nothrow @nogc @safe
     }
 
     assert(!_threadAllocator);
-    import stdx.allocator.internal : emplace;
+    import mir.conv : emplace;
     static ulong[stateSize!(ThreadAllocator).divideRoundUp(ulong.sizeof)] _threadAllocatorState;
     _threadAllocator = () @trusted { return emplace!(ThreadAllocator)(_threadAllocatorState[]); } ();
     return _threadAllocator;
@@ -663,14 +663,17 @@ propagates the exception.
 auto make(T, Allocator, A...)(auto ref Allocator alloc, auto ref A args)
 {
     import mir.utility : max;
-    import stdx.allocator.internal : emplace, emplaceRef;
+    import mir.conv : emplace, emplaceRef;
     auto m = alloc.allocate(max(stateSize!T, size_t(1)));
     if (!m.ptr) return null;
 
     // make can only be @safe if emplace or emplaceRef is `pure`
     auto construct()
     {
-        static if (is(T == class)) return emplace!T(m, args);
+        static if (is(T == class))
+        {
+            return emplace!T(m, args);
+        }
         else
         {
             // Assume cast is safe as allocation succeeded for `stateSize!T`
@@ -896,38 +899,56 @@ nothrow @safe @nogc unittest
     assertThrown(make!InvalidImpureStruct(Mallocator.instance, 42));
 }
 
-private void fillWithMemcpy(T)(void[] array, auto ref T filler) nothrow
+/++
++/
+T[] uninitializedFillDefault(T)(T[] array) nothrow @nogc
 {
-    import core.stdc.string : memcpy;
-    import mir.utility : min;
-    if (!array.length) return;
-    memcpy(array.ptr, &filler, T.sizeof);
-    // Fill the array from the initialized portion of itself exponentially.
-    for (size_t offset = T.sizeof; offset < array.length; )
+    static if (__VERSION__ < 2083)
     {
-        size_t extent = min(offset, array.length - offset);
-        memcpy(array.ptr + offset, array.ptr, extent);
-        offset += extent;
+        static if (is(Unqual!T == char) || is(Unqual!T == wchar))
+        {
+            import core.stdc.string : memset;
+            if (array !is null)
+                memset(array.ptr, 0xff, T.sizeof * array.length);
+            return array;
+        }
+        else
+        {
+            pragma(inline, false);
+            import mir.conv : emplaceInitializer;
+            foreach(ref e; array)
+                emplaceInitializer(e);
+            return array;
+        }
+    }
+    else
+    {
+        static if (__traits(isZeroInit, T))
+        {
+            import core.stdc.string : memset;
+            if (array !is null)
+                memset(array.ptr, 0, T.sizeof * array.length);
+            return array;
+        }
+        else static if (is(Unqual!T == char) || is(Unqual!T == wchar))
+        {
+            import core.stdc.string : memset;
+            if (array !is null)
+                memset(array.ptr, 0xff, T.sizeof * array.length);
+            return array;
+        }
+        else
+        {
+            pragma(inline, false);
+            import mir.conv : emplaceInitializer;
+            foreach(ref e; array)
+                emplaceInitializer(e);
+            return array;
+        }
     }
 }
 
-@system unittest
-{
-    int[] a;
-    fillWithMemcpy(a, 42);
-    assert(a.length == 0);
-    a = [ 1, 2, 3, 4, 5 ];
-    fillWithMemcpy(a, 42);
-    assert(a == [ 42, 42, 42, 42, 42]);
-}
-
-private T[] uninitializedFillDefault(T)(T[] array) nothrow
-{
-    T t = T.init;
-    fillWithMemcpy(array, t);
-    return array;
-}
-
+///
 pure nothrow @nogc
 @system unittest
 {
@@ -1039,6 +1060,7 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
     if (!m.ptr) return null;
     auto result = () @trusted { return cast(T[]) m; } ();
     import std.traits : hasElaborateCopyConstructor;
+    size_t i = 0;
     static if (hasElaborateCopyConstructor!T)
     {
         scope(failure)
@@ -1049,7 +1071,6 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
                 alloc.deallocate(m);
         }
 
-        size_t i = 0;
         static if (hasElaborateDestructor!T)
         {
             scope (failure)
@@ -1060,16 +1081,11 @@ T[] makeArray(T, Allocator)(auto ref Allocator alloc, size_t length,
                 }
             }
         }
-        import stdx.allocator.internal : emplace;
-        for (; i < length; ++i)
-        {
-            emplace!T(&result[i], init);
-        }
     }
-    else
+    import mir.conv: emplaceRef;
+    for (; i < length; ++i)
     {
-        alias U = Unqual!T;
-        () @trusted { fillWithMemcpy(cast(U[]) result, *(cast(U*) &init)); }();
+        emplaceRef!T(result[i], init);
     }
     return result;
 }
@@ -1195,7 +1211,7 @@ if (isInputRange!R && !isInfinite!R)
                 alloc.deallocate(m);
         }
 
-        import stdx.allocator.internal : emplaceRef;
+        import mir.conv : emplaceRef;
         static if (isNarrowString!R || isRandomAccessRange!R)
         {
             foreach (j; 0 .. range.length)
@@ -1252,7 +1268,7 @@ if (isInputRange!R && !isInfinite!R)
                 }
                 result = () @trusted { return cast(T[]) m; } ();
             }
-            import stdx.allocator.internal : emplaceRef;
+            import mir.conv : emplaceRef;
             emplaceRef(result[initialized], range.front);
         }
 
@@ -1583,7 +1599,7 @@ if (isInputRange!R)
         for (; !range.empty; range.popFront, toFill.popFront)
         {
             assert(!toFill.empty);
-            import stdx.allocator.internal : emplace;
+            import mir.conv : emplace;
             emplace!T(&toFill.front, range.front);
         }
         assert(toFill.empty);
@@ -1603,7 +1619,7 @@ if (isInputRange!R)
                 array = cast(T[]) buf;
                 return false;
             }
-            import stdx.allocator.internal : emplace;
+            import mir.conv : emplace;
             emplace!T(buf[$ - T.sizeof .. $], range.front);
         }
 
@@ -2001,7 +2017,7 @@ statically-typed allocator.)
 CAllocatorImpl!A allocatorObject(A)(auto ref A a)
 if (!isPointer!A)
 {
-    import stdx.allocator.internal : emplace;
+    import mir.conv : emplace;
     static if (stateSize!A == 0)
     {
         enum s = stateSize!(CAllocatorImpl!A).divideRoundUp(ulong.sizeof);
@@ -2042,7 +2058,7 @@ if (!isPointer!A)
 CAllocatorImpl!(A, Yes.indirect) allocatorObject(A)(A* pa)
 {
     assert(pa);
-    import stdx.allocator.internal : emplace;
+    import mir.conv : emplace;
     auto state = pa.allocate(stateSize!(CAllocatorImpl!(A, Yes.indirect)));
     static if (__traits(hasMember, A, "deallocate"))
     {
@@ -2093,7 +2109,7 @@ statically-typed allocator.)
 shared(CSharedAllocatorImpl!A) sharedAllocatorObject(A)(auto ref A a)
 if (!isPointer!A)
 {
-    import stdx.allocator.internal : emplace;
+    import mir.conv : emplace;
     static if (stateSize!A == 0)
     {
         enum s = stateSize!(CSharedAllocatorImpl!A).divideRoundUp(ulong.sizeof);
@@ -2127,7 +2143,7 @@ if (!isPointer!A)
 shared(CSharedAllocatorImpl!(A, Yes.indirect)) sharedAllocatorObject(A)(A* pa)
 {
     assert(pa);
-    import stdx.allocator.internal : emplace;
+    import mir.conv : emplace;
     auto state = pa.allocate(stateSize!(CSharedAllocatorImpl!(A, Yes.indirect)));
     static if (__traits(hasMember, A, "deallocate"))
     {
