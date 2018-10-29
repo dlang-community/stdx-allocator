@@ -40,4 +40,4 @@ packages:
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH"
- - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then meson build && cd build && ninja -j4 && ninja -j4 test -v && cd ..; fi # TODO: 32bit meson test
+ - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then meson build --default-library=static && cd build && ninja -j4 && ninja -j4 test -v && cd ..; fi # TODO: 32bit meson test
