@@ -156,10 +156,13 @@ struct GCAllocator
 
         assert(GC.sizeOf(buffer.ptr) == s);
 
-        auto buffer2 = GCAllocator.instance.allocate(s - (s / 2) + 1);
-        scope(exit) GCAllocator.instance.deallocate(buffer2);
-
-        assert(GC.sizeOf(buffer2.ptr) == s);
+        // the GC should provide power of 2 as "good" sizes, but other sizes are allowed, too
+        version(none)
+        {
+            auto buffer2 = GCAllocator.instance.allocate(s - (s / 2) + 1);
+            scope(exit) GCAllocator.instance.deallocate(buffer2);
+            assert(GC.sizeOf(buffer2.ptr) == s);
+        }
     }
 
     // anything above a page is simply rounded up to next page
