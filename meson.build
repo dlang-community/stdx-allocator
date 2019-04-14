@@ -82,7 +82,8 @@ install_subdir('source/stdx/', install_dir: 'include/d/stdx-allocator/')
 
 pkgc.generate(name: 'stdx-allocator',
 	libraries: allocator_lib,
-    subdirs: 'd/' + meson.project_name(),
+	requires: ['mir-core'],
+	subdirs: 'd/' + meson.project_name(),
 	version: meson.project_version(),
 	description: 'High-level interface for allocators for D, extracted from Phobos.'
 )
