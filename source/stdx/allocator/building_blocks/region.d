@@ -390,6 +390,7 @@ struct InSituRegion(size_t size, size_t minAlign = platformAlignment)
     else version (MIPS64) enum growDownwards = Yes.growDownwards;
     else version (SPARC) enum growDownwards = Yes.growDownwards;
     else version (SystemZ) enum growDownwards = Yes.growDownwards;
+    else version (WebAssembly) enum growDownwards = Yes.growDownwards;
     else static assert(0, "Dunno how the stack grows on this architecture.");
 
     @disable this(this);

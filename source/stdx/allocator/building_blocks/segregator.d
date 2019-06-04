@@ -247,7 +247,7 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
                 && __traits(hasMember, LargeAllocator, "empty"))
         Ternary empty()
         {
-            return _small.empty && _large.empty;
+            return _small.empty & _large.empty;
         }
 
         static if (__traits(hasMember, SmallAllocator, "resolveInternalPointer")

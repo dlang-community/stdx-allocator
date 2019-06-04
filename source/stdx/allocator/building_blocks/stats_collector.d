@@ -160,7 +160,7 @@ struct StatsCollector(Allocator, ulong flags = Options.all,
 private:
     import stdx.allocator.internal : Ternary;
 
-    static string define(string type, string[] names...)
+    enum define = (string type, string[] names...)
     {
         string result;
         foreach (v; names)
@@ -169,7 +169,7 @@ private:
                 ~ "public const("~type~") "~v~"() const { return _"~v~"; }"
                 ~ "}";
         return result;
-    }
+    };
 
     void add(string counter)(sizediff_t n)
     {

@@ -2,6 +2,14 @@
 module stdx.allocator.gc_allocator;
 import stdx.allocator.common;
 
+version (D_BetterC) {
+    import stdx.allocator.building_blocks.null_allocator;
+    alias GCAllocator = NullAllocator;
+} else
+    version = HasDRuntime;
+
+version (HasDRuntime):
+
 /**
 D's built-in garbage-collected allocator.
  */
