@@ -223,6 +223,10 @@ Source: $(PHOBOSSRC std/experimental/_allocator)
 
 module stdx.allocator;
 
+version (D_BetterC) {} else version = HasDRuntime;
+
+version (HasDRuntime):
+
 public import stdx.allocator.common,
     stdx.allocator.typed;
 

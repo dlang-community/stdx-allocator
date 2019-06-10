@@ -201,6 +201,9 @@ version (Windows)
 /**
    Aligned allocator using OS-specific primitives, under a uniform API.
  */
+version (WebAssembly) {} else version = HasMemAlign;
+
+version (HasMemAlign)
 struct AlignedMallocator
 {
     @system unittest { testAllocator!(() => typeof(this).instance); }

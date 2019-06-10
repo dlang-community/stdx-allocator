@@ -57,7 +57,14 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         auto m = cast(ubyte[])(AlignedMallocator.instance.alignedAllocate(1024 * 64,
                                 max(theAlignment, cast(uint) size_t.sizeof)));
         scope(exit) AlignedMallocator.instance.deallocate(m);
-        testAllocator!(() => BitmappedBlock(m));
+        static if (theBlockSize == chooseAtRuntime)
+        {
+            testAllocator!(() => BitmappedBlock!(theBlockSize, theAlignment, NullAllocator)(m, 64));
+        }
+        else
+        {
+            testAllocator!(() => BitmappedBlock!(theBlockSize, theAlignment, NullAllocator)(m));
+        }
     }
     static assert(theBlockSize > 0 && theAlignment.isGoodStaticAlignment);
     static assert(theBlockSize == chooseAtRuntime
@@ -81,7 +88,7 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         @property uint blockSize() { return _blockSize; }
         @property void blockSize(uint s)
         {
-            assert(!_control && s % alignment == 0);
+            assert(_control.allAre0() && s % alignment == 0);
             _blockSize = s;
         }
         private uint _blockSize;
@@ -191,6 +198,13 @@ struct BitmappedBlock(size_t theBlockSize, uint theAlignment = platformAlignment
         auto data = cast(ubyte[])(parent.allocate(toAllocate));
         this(data);
         assert(_blocks * blockSize >= capacity);
+    }
+
+    static if (chooseAtRuntime == theBlockSize)
+    this(ubyte[] data, uint blockSize)
+    {
+        this._blockSize = blockSize;
+        this(data);
     }
 
     /**
