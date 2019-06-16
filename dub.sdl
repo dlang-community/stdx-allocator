@@ -10,4 +10,5 @@ configuration "unittest" {
 
 configuration "wasm" {
 	dflags "-mtriple=wasm32-unknown-unknown-wasm" "-betterC"
+	targetType "sourceLibrary"
 }
