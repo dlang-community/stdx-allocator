@@ -93,7 +93,7 @@ size_t goodAllocSize(A)(auto ref A a, size_t n)
 Returns s rounded up to a multiple of base.
 */
 @safe @nogc nothrow pure
-package size_t roundUpToMultipleOf()(size_t s, uint base)
+size_t roundUpToMultipleOf()(size_t s, uint base)
 {
     assert(base);
     auto rem = s % base;
@@ -113,7 +113,7 @@ unittest
 Returns `n` rounded up to a multiple of alignment, which must be a power of 2.
 */
 @safe @nogc nothrow pure
-package size_t roundUpToAlignment()(size_t n, uint alignment)
+size_t roundUpToAlignment()(size_t n, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -138,7 +138,7 @@ unittest
 Returns `n` rounded down to a multiple of alignment, which must be a power of 2.
 */
 @safe @nogc nothrow pure
-package size_t roundDownToAlignment()(size_t n, uint alignment)
+size_t roundDownToAlignment()(size_t n, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -160,7 +160,7 @@ may therefore be shorter. Returns the adjusted buffer, or null if obtaining a
 non-empty buffer is impossible.
 */
 @nogc nothrow pure
-package void[] roundUpToAlignment()(void[] b, uint a)
+void[] roundUpToAlignment()(void[] b, uint a)
 {
     auto e = b.ptr + b.length;
     auto p = cast(void*) roundUpToAlignment(cast(size_t) b.ptr, a);
@@ -182,7 +182,7 @@ package void[] roundUpToAlignment()(void[] b, uint a)
 Like `a / b` but rounds the result up, not down.
 */
 @safe @nogc nothrow pure
-package size_t divideRoundUp()(size_t a, size_t b)
+size_t divideRoundUp()(size_t a, size_t b)
 {
     assert(b);
     return (a + b - 1) / b;
@@ -192,7 +192,7 @@ package size_t divideRoundUp()(size_t a, size_t b)
 Returns `s` rounded up to a multiple of `base`.
 */
 @nogc nothrow pure
-package void[] roundStartToMultipleOf()(void[] s, uint base)
+void[] roundStartToMultipleOf()(void[] s, uint base)
 {
     assert(base);
     auto p = cast(void*) roundUpToMultipleOf(
@@ -214,7 +214,7 @@ nothrow pure
 Returns $(D s) rounded up to the nearest power of 2.
 */
 @safe @nogc nothrow pure
-package size_t roundUpToPowerOf2()(size_t s)
+size_t roundUpToPowerOf2()(size_t s)
 {
     import std.meta : AliasSeq;
     assert(s <= (size_t.max >> 1) + 1);
@@ -251,7 +251,7 @@ unittest
 Returns the number of trailing zeros of $(D x).
 */
 @safe @nogc nothrow pure
-package uint trailingZeros()(ulong x)
+uint trailingZeros()(ulong x)
 {
     uint result;
     while (result < 64 && !(x & (1UL << result)))
@@ -275,7 +275,7 @@ unittest
 Returns `true` if `ptr` is aligned at `alignment`.
 */
 @nogc nothrow pure
-package bool alignedAt(T)(T* ptr, uint alignment)
+bool alignedAt(T)(T* ptr, uint alignment)
 {
     return cast(size_t) ptr % alignment == 0;
 }
@@ -285,7 +285,7 @@ Returns the effective alignment of `ptr`, i.e. the largest power of two that is
 a divisor of `ptr`.
 */
 @nogc nothrow pure
-package uint effectiveAlignment()(void* ptr)
+uint effectiveAlignment()(void* ptr)
 {
     return 1U << trailingZeros(cast(size_t) ptr);
 }
@@ -302,7 +302,7 @@ Aligns a pointer down to a specified alignment. The resulting pointer is less
 than or equal to the given pointer.
 */
 @nogc nothrow pure
-package void* alignDownTo()(void* ptr, uint alignment)
+void* alignDownTo()(void* ptr, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -314,7 +314,7 @@ Aligns a pointer up to a specified alignment. The resulting pointer is greater
 than or equal to the given pointer.
 */
 @nogc nothrow pure
-package void* alignUpTo()(void* ptr, uint alignment)
+void* alignUpTo()(void* ptr, uint alignment)
 {
     import stdx.allocator.internal : isPowerOf2;
     assert(alignment.isPowerOf2);
@@ -323,14 +323,14 @@ package void* alignUpTo()(void* ptr, uint alignment)
 }
 
 @safe @nogc nothrow pure
-package bool isGoodStaticAlignment()(uint x)
+bool isGoodStaticAlignment()(uint x)
 {
     import stdx.allocator.internal : isPowerOf2;
     return x.isPowerOf2;
 }
 
 @safe @nogc nothrow pure
-package bool isGoodDynamicAlignment()(uint x)
+bool isGoodDynamicAlignment()(uint x)
 {
     import stdx.allocator.internal : isPowerOf2;
     return x.isPowerOf2 && x >= (void*).sizeof;
@@ -403,7 +403,7 @@ bool alignedReallocate(Allocator)(auto ref Allocator alloc,
 /**
 Forwards each of the methods in `funs` (if defined) to `member`.
 */
-/*package*/ enum forwardToMember = (string member, string[] funs...)
+enum forwardToMember = (string member, string[] funs...)
 {
     string result = "    import std.traits : Parameters;\n";
     foreach (fun; funs)

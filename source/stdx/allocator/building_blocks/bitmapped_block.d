@@ -1196,7 +1196,7 @@ private void resetBits()(ref ulong w, uint lsb, uint msb)
 /*
 Bit disposition is MSB=0 (leftmost, big endian).
 */
-private struct BitVector
+struct BitVector
 {
     ulong[] _rep;
 
