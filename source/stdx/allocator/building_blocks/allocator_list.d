@@ -187,8 +187,8 @@ struct AllocatorList(Factory, BookkeepingAllocator = GCAllocator)
         if (auto a = addAllocator(s))
         {
             auto result = a.allocate(s);
-			static if (__traits(hasMember, Allocator, "owns"))
-				assert(owns(result) == Ternary.yes || !result.ptr);
+            static if (__traits(hasMember, Allocator, "owns"))
+                assert(owns(result) == Ternary.yes || !result.ptr);
             return result;
         }
         return null;
@@ -645,7 +645,7 @@ unittest
 	import stdx.allocator.building_blocks.free_list;
 	alias OwnlessAllocator = GCAllocator;
 	static assert(!__traits(hasMember, OwnlessAllocator, "owns"), 
-		"This test requires an ownless allocator."
+	    "This test requires an ownless allocator."
 	);
 	alias A = AllocatorList!(_ => ContiguousFreeList!(GCAllocator, size_t.sizeof)(1));
 }
