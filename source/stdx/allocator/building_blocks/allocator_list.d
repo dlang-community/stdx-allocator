@@ -643,9 +643,9 @@ version(Posix) @system unittest
 unittest
 {
 	import stdx.allocator.building_blocks.free_list;
-	alias OwnlessAllocator = GCAllocator;
+	alias OwnlessAllocator = ContiguousFreeList!(GCAllocator, size_t.sizeof);
 	static assert(!__traits(hasMember, OwnlessAllocator, "owns"), 
 	    "This test requires an ownless allocator."
 	);
-	alias A = AllocatorList!(_ => ContiguousFreeList!(GCAllocator, size_t.sizeof)(1));
+	alias A = AllocatorList!(_ => OwnlessAllocator(1));
 }
