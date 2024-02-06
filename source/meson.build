@@ -24,4 +24,4 @@ allocator_src = files(
 	'stdx/allocator/gc_allocator.d',
 )
 
-allocador_include = include_directories('.')
+allocator_include = include_directories('.')
