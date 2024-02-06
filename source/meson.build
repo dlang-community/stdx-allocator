@@ -1,0 +1,27 @@
+allocator_src = files(
+	'stdx/allocator/internal.d',
+	'stdx/allocator/building_blocks/null_allocator.d',
+	'stdx/allocator/building_blocks/fallback_allocator.d',
+	'stdx/allocator/building_blocks/bitmapped_block.d',
+	'stdx/allocator/building_blocks/stats_collector.d',
+	'stdx/allocator/building_blocks/package.d',
+	'stdx/allocator/building_blocks/affix_allocator.d',
+	'stdx/allocator/building_blocks/free_list.d',
+	'stdx/allocator/building_blocks/bucketizer.d',
+	'stdx/allocator/building_blocks/free_tree.d',
+	'stdx/allocator/building_blocks/kernighan_ritchie.d',
+	'stdx/allocator/building_blocks/allocator_list.d',
+	'stdx/allocator/building_blocks/segregator.d',
+	'stdx/allocator/building_blocks/scoped_allocator.d',
+	'stdx/allocator/building_blocks/region.d',
+	'stdx/allocator/building_blocks/quantizer.d',
+	'stdx/allocator/typed.d',
+	'stdx/allocator/mmap_allocator.d',
+	'stdx/allocator/showcase.d',
+	'stdx/allocator/mallocator.d',
+	'stdx/allocator/package.d',
+	'stdx/allocator/common.d',
+	'stdx/allocator/gc_allocator.d',
+)
+
+allocador_include = include_directories('.')
