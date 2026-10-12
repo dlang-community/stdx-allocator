@@ -4,19 +4,19 @@ module stdx.allocator.building_blocks.fallback_allocator;
 import stdx.allocator.common;
 
 /**
-$(D FallbackAllocator) is the allocator equivalent of an "or" operator in
-algebra. An allocation request is first attempted with the $(D Primary)
-allocator. If that returns $(D null), the request is forwarded to the $(D
-Fallback) allocator. All other requests are dispatched appropriately to one of
+`FallbackAllocator` is the allocator equivalent of an "or" operator in
+algebra. An allocation request is first attempted with the `Primary`
+allocator. If that returns `null`, the request is forwarded to the
+`Fallback` allocator. All other requests are dispatched appropriately to one of
 the two allocators.
 
-In order to work, $(D FallbackAllocator) requires that $(D Primary) defines the
-$(D owns) method. This is needed in order to decide which allocator was
+In order to work, `FallbackAllocator` requires that `Primary` defines the
+`owns` method. This is needed in order to decide which allocator was
 responsible for a given allocation.
 
-$(D FallbackAllocator) is useful for fast, special-purpose allocators backed up
+`FallbackAllocator` is useful for fast, special-purpose allocators backed up
 by general-purpose allocators. The example below features a stack region backed
-up by the $(D GCAllocator).
+up by the `GCAllocator`.
 */
 struct FallbackAllocator(Primary, Fallback)
 {
@@ -38,7 +38,7 @@ struct FallbackAllocator(Primary, Fallback)
     else alias fallback = Fallback.instance;
 
     /**
-    If both $(D Primary) and $(D Fallback) are stateless, $(D FallbackAllocator)
+    If both `Primary` and `Fallback` are stateless, `FallbackAllocator`
     defines a static instance called `instance`.
     */
     static if (!stateSize!Primary && !stateSize!Fallback)
@@ -52,8 +52,8 @@ struct FallbackAllocator(Primary, Fallback)
     enum uint alignment = min(Primary.alignment, Fallback.alignment);
 
     /**
-    Allocates memory trying the primary allocator first. If it returns $(D
-    null), the fallback allocator is tried.
+    Allocates memory trying the primary allocator first. If it returns
+    `null`, the fallback allocator is tried.
     */
     void[] allocate(size_t s)
     {
@@ -62,7 +62,7 @@ struct FallbackAllocator(Primary, Fallback)
     }
 
     /**
-    $(D FallbackAllocator) offers $(D alignedAllocate) iff at least one of the
+    `FallbackAllocator` offers `alignedAllocate` iff at least one of the
     allocators also offers it. It attempts to allocate using either or both.
     */
     static if (hasMember!(Primary, "alignedAllocate")
@@ -84,12 +84,12 @@ struct FallbackAllocator(Primary, Fallback)
 
     /**
 
-    $(D expand) is defined if and only if at least one of the allocators
-    defines $(D expand). It works as follows. If $(D primary.owns(b)), then the
-    request is forwarded to $(D primary.expand) if it is defined, or fails
-    (returning $(D false)) otherwise. If $(D primary) does not own $(D b), then
-    the request is forwarded to $(D fallback.expand) if it is defined, or fails
-    (returning $(D false)) otherwise.
+    `expand` is defined if and only if at least one of the allocators
+    defines `expand`. It works as follows. If `primary.owns(b)`, then the
+    request is forwarded to `primary.expand` if it is defined, or fails
+    (returning `false`) otherwise. If `primary` does not own `b`, then
+    the request is forwarded to `fallback.expand` if it is defined, or fails
+    (returning `false`) otherwise.
 
     */
     static if (hasMember!(Primary, "owns")
@@ -113,13 +113,13 @@ struct FallbackAllocator(Primary, Fallback)
 
     /**
 
-    $(D reallocate) works as follows. If $(D primary.owns(b)), then $(D
-    primary.reallocate(b, newSize)) is attempted. If it fails, an attempt is
-    made to move the allocation from $(D primary) to $(D fallback).
+    `reallocate` works as follows. If `primary.owns(b)`, then
+    `primary.reallocate(b, newSize)` is attempted. If it fails, an attempt is
+    made to move the allocation from `primary` to `fallback`.
 
-    If $(D primary) does not own $(D b), then $(D fallback.reallocate(b,
-    newSize)) is attempted. If that fails, an attempt is made to move the
-    allocation from $(D fallback) to $(D primary).
+    If `primary` does not own `b`, then
+    `fallback.reallocate(b, newSize)` is attempted. If that fails, an attempt is made to move the
+    allocation from `fallback` to `primary`.
 
     */
     static if (hasMember!(Primary, "owns"))
@@ -192,8 +192,8 @@ struct FallbackAllocator(Primary, Fallback)
     }
 
     /**
-    $(D owns) is defined if and only if both allocators define $(D owns).
-    Returns $(D primary.owns(b) | fallback.owns(b)).
+    `owns` is defined if and only if both allocators define `owns`.
+    Returns `primary.owns(b) | fallback.owns(b)`.
     */
     static if (hasMember!(Primary, "owns") && hasMember!(Fallback, "owns"))
     Ternary owns(void[] b)
@@ -202,7 +202,7 @@ struct FallbackAllocator(Primary, Fallback)
     }
 
     /**
-    $(D resolveInternalPointer) is defined if and only if both allocators
+    `resolveInternalPointer` is defined if and only if both allocators
     define it.
     */
     static if (hasMember!(Primary, "resolveInternalPointer")
@@ -214,11 +214,11 @@ struct FallbackAllocator(Primary, Fallback)
     }
 
     /**
-    $(D deallocate) is defined if and only if at least one of the allocators
-    define    $(D deallocate). It works as follows. If $(D primary.owns(b)),
-    then the request is forwarded to $(D primary.deallocate) if it is defined,
-    or is a no-op otherwise. If $(D primary) does not own $(D b), then the
-    request is forwarded to $(D fallback.deallocate) if it is defined, or is a
+    `deallocate` is defined if and only if at least one of the allocators
+    define    `deallocate`. It works as follows. If `primary.owns(b)`,
+    then the request is forwarded to `primary.deallocate` if it is defined,
+    or is a no-op otherwise. If `primary` does not own `b`, then the
+    request is forwarded to `fallback.deallocate` if it is defined, or is a
     no-op otherwise.
     */
     static if (hasMember!(Primary, "owns") &&
@@ -243,9 +243,9 @@ struct FallbackAllocator(Primary, Fallback)
     }
 
     /**
-    $(D empty) is defined if both allocators also define it.
+    `empty` is defined if both allocators also define it.
 
-    Returns: $(D primary.empty & fallback.empty)
+    Returns: `primary.empty & fallback.empty`
     */
     static if (hasMember!(Primary, "empty") && hasMember!(Fallback, "empty"))
     Ternary empty()
@@ -319,8 +319,8 @@ private auto ref forward(alias arg)()
 
 /**
 Convenience function that uses type deduction to return the appropriate
-$(D FallbackAllocator) instance. To initialize with allocators that don't have
-state, use their $(D it) static member.
+`FallbackAllocator` instance. To initialize with allocators that don't have
+state, use their `it` static member.
 */
 FallbackAllocator!(Primary, Fallback)
 fallbackAllocator(Primary, Fallback)(auto ref Primary p, auto ref Fallback f)
