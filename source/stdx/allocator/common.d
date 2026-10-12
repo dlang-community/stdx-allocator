@@ -1,12 +1,41 @@
+// Written in the D programming language.
 /**
 Utility and ancillary artifacts of `stdx.allocator`. This module
 shouldn't be used directly; its functionality will be migrated into more
 appropriate parts of `std`.
 
 Authors: $(HTTP erdani.com, Andrei Alexandrescu), Timon Gehr (`Ternary`)
+
+Source: $(PHOBOSSRC std/experimental/allocator/common.d)
 */
 module stdx.allocator.common;
 import std.algorithm.comparison, std.traits;
+
+/**
+Is `true` iff `A` is an allocator.
+ */
+enum isAllocator(A) = (is(typeof(A.allocate(size_t.init)) == void[]) && is(typeof(A.alignment) : size_t));
+
+///
+@safe @nogc nothrow pure
+unittest
+{
+    import stdx.allocator.building_blocks.null_allocator : NullAllocator;
+    import stdx.allocator.mallocator : Mallocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+
+    version (WebAssembly) {}
+    else import stdx.allocator.mmap_allocator : MmapAllocator;
+
+    static assert(isAllocator!NullAllocator);
+    static assert(isAllocator!Mallocator);
+    static assert(isAllocator!GCAllocator);
+
+    version (WebAssembly) {}
+    else static assert(isAllocator!MmapAllocator);
+
+    static assert(!isAllocator!int);
+}
 
 /**
 Returns the size in bytes of the state that needs to be allocated to hold an
@@ -41,6 +70,44 @@ unittest
     static assert(stateSize!C2 == 4 * size_t.sizeof);
     static class C3 { char c; }
     static assert(stateSize!C3 == 2 * size_t.sizeof + char.sizeof);
+}
+
+/**
+State of an allocator `A`.
+
+`AllocatorState!(A).sizeof` is zero for `A` being `NullAllocator`, `Mallocator`,
+`GCAllocator`, and `MMapAllocator` and typically non-zero for the other.
+ */
+mixin template AllocatorState(A)
+if (isAllocator!A)
+{
+    static if (stateSize!A == 0)
+        alias allocator = A.instance;
+    else
+        A allocator;
+}
+
+///
+@safe @nogc nothrow pure
+unittest
+{
+    import stdx.allocator.building_blocks.null_allocator : NullAllocator;
+    import stdx.allocator.mallocator : Mallocator;
+    import stdx.allocator.gc_allocator : GCAllocator;
+
+    version (WebAssembly) {}
+    else import stdx.allocator.mmap_allocator : MmapAllocator;
+
+    struct S
+    {
+        mixin AllocatorState!NullAllocator n;
+        mixin AllocatorState!GCAllocator g;
+        mixin AllocatorState!Mallocator m;
+
+        version (WebAssembly) {}
+        else mixin AllocatorState!MmapAllocator p;
+    }
+    static assert(S.sizeof == 1);
 }
 
 /**
@@ -88,7 +155,7 @@ size_t goodAllocSize(A)(auto ref A a, size_t n)
     return n.roundUpToMultipleOf(a.alignment);
 }
 
-/**
+/*
 Returns s rounded up to a multiple of base.
 */
 @safe @nogc nothrow pure
@@ -108,13 +175,13 @@ unittest
     assert(118.roundUpToMultipleOf(11) == 121);
 }
 
-/**
+/*
 Returns `n` rounded up to a multiple of alignment, which must be a power of 2.
 */
 @safe @nogc nothrow pure
 package size_t roundUpToAlignment(size_t n, uint alignment)
 {
-    import stdx.allocator.internal : isPowerOf2;
+    import std.math.traits : isPowerOf2;
     assert(alignment.isPowerOf2);
     immutable uint slack = cast(uint) n & (alignment - 1);
     const result = slack
@@ -133,13 +200,13 @@ unittest
     assert(118.roundUpToAlignment(64) == 128);
 }
 
-/**
+/*
 Returns `n` rounded down to a multiple of alignment, which must be a power of 2.
 */
 @safe @nogc nothrow pure
 package size_t roundDownToAlignment(size_t n, uint alignment)
 {
-    import stdx.allocator.internal : isPowerOf2;
+    import std.math.traits : isPowerOf2;
     assert(alignment.isPowerOf2);
     return n & ~size_t(alignment - 1);
 }
@@ -153,7 +220,7 @@ unittest
     assert(63.roundDownToAlignment(64) == 0);
 }
 
-/**
+/*
 Advances the beginning of `b` to start at alignment `a`. The resulting buffer
 may therefore be shorter. Returns the adjusted buffer, or null if obtaining a
 non-empty buffer is impossible.
@@ -177,7 +244,7 @@ package void[] roundUpToAlignment(void[] b, uint a)
     assert(roundUpToAlignment(buf, 128) !is null);
 }
 
-/**
+/*
 Like `a / b` but rounds the result up, not down.
 */
 @safe @nogc nothrow pure
@@ -187,7 +254,7 @@ package size_t divideRoundUp(size_t a, size_t b)
     return (a + b - 1) / b;
 }
 
-/**
+/*
 Returns `s` rounded up to a multiple of `base`.
 */
 @nogc nothrow pure
@@ -209,7 +276,7 @@ nothrow pure
     assert(roundStartToMultipleOf(p, 16) is p);
 }
 
-/**
+/*
 Returns `s` rounded up to the nearest power of 2.
 */
 @safe @nogc nothrow pure
@@ -246,18 +313,14 @@ unittest
     assert(((size_t.max >> 1) + 1).roundUpToPowerOf2 == (size_t.max >> 1) + 1);
 }
 
-/**
+/*
 Returns the number of trailing zeros of `x`.
 */
 @safe @nogc nothrow pure
 package uint trailingZeros(ulong x)
 {
-    uint result;
-    while (result < 64 && !(x & (1UL << result)))
-    {
-        ++result;
-    }
-    return result;
+    import core.bitop : bsf;
+    return x == 0 ? 64 : bsf(x);
 }
 
 @safe @nogc nothrow pure
@@ -270,7 +333,7 @@ unittest
     assert(trailingZeros(4) == 2);
 }
 
-/**
+/*
 Returns `true` if `ptr` is aligned at `alignment`.
 */
 @nogc nothrow pure
@@ -279,14 +342,14 @@ package bool alignedAt(T)(T* ptr, uint alignment)
     return cast(size_t) ptr % alignment == 0;
 }
 
-/**
+/*
 Returns the effective alignment of `ptr`, i.e. the largest power of two that is
 a divisor of `ptr`.
 */
 @nogc nothrow pure
-package uint effectiveAlignment(void* ptr)
+package size_t effectiveAlignment(void* ptr)
 {
-    return 1U << trailingZeros(cast(size_t) ptr);
+    return (cast(size_t) 1) << trailingZeros(cast(size_t) ptr);
 }
 
 @nogc nothrow pure
@@ -294,28 +357,31 @@ package uint effectiveAlignment(void* ptr)
 {
     int x;
     assert(effectiveAlignment(&x) >= int.alignof);
+
+    const max = (cast(size_t) 1) << (size_t.sizeof * 8 - 1);
+    assert(effectiveAlignment(cast(void*) max) == max);
 }
 
-/**
+/*
 Aligns a pointer down to a specified alignment. The resulting pointer is less
 than or equal to the given pointer.
 */
 @nogc nothrow pure
-package void* alignDownTo(void* ptr, uint alignment)
+package void* alignDownTo(return scope void* ptr, uint alignment)
 {
-    import stdx.allocator.internal : isPowerOf2;
+    import std.math.traits : isPowerOf2;
     assert(alignment.isPowerOf2);
     return cast(void*) (cast(size_t) ptr & ~(alignment - 1UL));
 }
 
-/**
+/*
 Aligns a pointer up to a specified alignment. The resulting pointer is greater
 than or equal to the given pointer.
 */
 @nogc nothrow pure
-package void* alignUpTo(void* ptr, uint alignment)
+package void* alignUpTo(return scope void* ptr, uint alignment)
 {
-    import stdx.allocator.internal : isPowerOf2;
+    import std.math.traits : isPowerOf2;
     assert(alignment.isPowerOf2);
     immutable uint slack = cast(size_t) ptr & (alignment - 1U);
     return slack ? ptr + alignment - slack : ptr;
@@ -324,14 +390,14 @@ package void* alignUpTo(void* ptr, uint alignment)
 @safe @nogc nothrow pure
 package bool isGoodStaticAlignment(uint x)
 {
-    import stdx.allocator.internal : isPowerOf2;
+    import std.math.traits : isPowerOf2;
     return x.isPowerOf2;
 }
 
 @safe @nogc nothrow pure
 package bool isGoodDynamicAlignment(uint x)
 {
-    import stdx.allocator.internal : isPowerOf2;
+    import std.math.traits : isPowerOf2;
     return x.isPowerOf2 && x >= (void*).sizeof;
 }
 
@@ -380,6 +446,7 @@ implementation of `reallocate`.
 */
 bool alignedReallocate(Allocator)(ref Allocator alloc,
         ref void[] b, size_t s, uint a)
+if (__traits(hasMember, Allocator, "alignedAllocate"))
 {
     static if (__traits(hasMember, Allocator, "expand"))
     {
@@ -388,15 +455,73 @@ bool alignedReallocate(Allocator)(ref Allocator alloc,
     }
     else
     {
-        if (b.length == s) return true;
+        if (b.length == s && b.ptr.alignedAt(a)) return true;
     }
     auto newB = alloc.alignedAllocate(s, a);
+    if (newB.length != s) return false;
     if (newB.length <= b.length) newB[] = b[0 .. newB.length];
     else newB[0 .. b.length] = b[];
     static if (__traits(hasMember, Allocator, "deallocate"))
         alloc.deallocate(b);
     b = newB;
     return true;
+}
+
+@system unittest
+{
+    bool called = false;
+    struct DummyAllocator
+    {
+        void[] alignedAllocate(size_t size, uint alignment)
+        {
+            called = true;
+            return null;
+        }
+    }
+
+    struct DummyAllocatorExpand
+    {
+        void[] alignedAllocate(size_t size, uint alignment)
+        {
+            return null;
+        }
+
+        bool expand(ref void[] b, size_t length)
+        {
+            called = true;
+            return true;
+        }
+    }
+
+    char[128] buf;
+    uint alignment = 32;
+    auto alignedPtr = roundUpToMultipleOf(cast(size_t) buf.ptr, alignment);
+    auto diff = alignedPtr - cast(size_t) buf.ptr;
+
+    // Align the buffer to 'alignment'
+    void[] b = cast(void[]) (buf.ptr + diff)[0 .. buf.length - diff];
+
+    DummyAllocator a1;
+    // Ask for same length and alignment, should not call 'alignedAllocate'
+    assert(alignedReallocate(a1, b, b.length, alignment));
+    assert(!called);
+
+    // Ask for same length, different alignment
+    // should call 'alignedAllocate' if not aligned to new value
+    alignedReallocate(a1, b, b.length, alignment + 1);
+    assert(b.ptr.alignedAt(alignment + 1) || called);
+    called = false;
+
+    DummyAllocatorExpand a2;
+    // Ask for bigger length, same alignment, should call 'expand'
+    assert(alignedReallocate(a2, b, b.length + 1, alignment));
+    assert(called);
+    called = false;
+
+    // Ask for bigger length, different alignment
+    // should call 'alignedAllocate' if not aligned to new value
+    alignedReallocate(a2, b, b.length + 1, alignment + 1);
+    assert(b.ptr.alignedAt(alignment + 1) || !called);
 }
 
 /**
@@ -417,16 +542,15 @@ Forwards each of the methods in `funs` (if defined) to `member`.
     return result;
 }
 
-version(unittest)
+version (StdUnittest)
 {
-    import stdx.allocator : IAllocator, ISharedAllocator;
 
     package void testAllocator(alias make)()
     {
         import std.conv : text;
-        import stdx.allocator.internal : isPowerOf2;
+        import std.math.traits : isPowerOf2;
         import std.stdio : writeln, stderr;
-        import stdx.allocator.internal : Ternary;
+        import std.typecons : Ternary;
         alias A = typeof(make());
         scope(failure) stderr.writeln("testAllocator failed for ", A.stringof);
 
@@ -449,6 +573,18 @@ version(unittest)
         auto b2 = a.allocate(2);
         assert(b2.length == 2);
         assert(b2.ptr + b2.length <= b1.ptr || b1.ptr + b1.length <= b2.ptr);
+
+        // Test allocateZeroed
+        static if (__traits(hasMember, A, "allocateZeroed"))
+        {{
+            auto b3 = a.allocateZeroed(8);
+            if (b3 !is null)
+            {
+                assert(b3.length == 8);
+                foreach (e; cast(ubyte[]) b3)
+                    assert(e == 0);
+            }
+        }}
 
         // Test alignedAllocate
         static if (__traits(hasMember, A, "alignedAllocate"))
@@ -545,18 +681,22 @@ version(unittest)
          }}
     }
 
-    package void testAllocatorObject(AllocInterface)(AllocInterface a)
-        if (is(AllocInterface : IAllocator)
-            || is (AllocInterface : shared ISharedAllocator))
+    package void testAllocatorObject(RCAllocInterface)(RCAllocInterface a)
     {
-        import std.conv : text;
-        import stdx.allocator.internal : isPowerOf2;
-        import std.stdio : writeln, stderr;
-        import stdx.allocator.internal : Ternary;
-        scope(failure) stderr.writeln("testAllocatorObject failed for ",
-                AllocInterface.stringof);
+        // this used to be a template constraint, but moving it inside prevents
+        // unnecessary import of stdx.allocator
+        import stdx.allocator : RCIAllocator, RCISharedAllocator;
+        static assert(is(RCAllocInterface == RCIAllocator)
+            || is (RCAllocInterface == RCISharedAllocator));
 
-        assert(a);
+        import std.conv : text;
+        import std.math.traits : isPowerOf2;
+        import std.stdio : writeln, stderr;
+        import std.typecons : Ternary;
+        scope(failure) stderr.writeln("testAllocatorObject failed for ",
+                RCAllocInterface.stringof);
+
+        assert(!a.isNull);
 
         // Test alignment
         assert(a.alignment.isPowerOf2);

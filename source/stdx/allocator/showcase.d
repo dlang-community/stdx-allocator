@@ -1,11 +1,15 @@
+// Written in the D programming language.
 /**
-
 Collection of typical and useful prebuilt allocators using the given
 components. User code would typically import this module and use its
 facilities, or import individual heap building blocks and assemble them.
 
+Source: $(PHOBOSSRC std/experimental/allocator/_showcase.d)
 */
 module stdx.allocator.showcase;
+
+version (WebAssembly) {}
+else:
 
 import stdx.allocator.building_blocks.fallback_allocator,
     stdx.allocator.gc_allocator,

@@ -1,4 +1,7 @@
-///
+// Written in the D programming language.
+/**
+Source: $(PHOBOSSRC std/experimental/allocator/building_blocks/null_allocator.d)
+*/
 module stdx.allocator.building_blocks.null_allocator;
 
 /**
@@ -8,7 +11,9 @@ composite allocators.
 */
 struct NullAllocator
 {
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
+
+    nothrow @nogc pure @safe:
     /**
     `NullAllocator` advertises a relatively large _alignment equal to 64 KB.
     This is because `NullAllocator` never actually needs to honor this
@@ -39,7 +44,7 @@ struct NullAllocator
     bool alignedReallocate(ref void[] b, size_t, uint) shared
     { assert(b is null); return false; }
     /// Returns `Ternary.no`.
-    Ternary owns(void[]) shared const { return Ternary.no; }
+    Ternary owns(const void[]) shared const { return Ternary.no; }
     /**
     Returns `Ternary.no`.
     */
@@ -64,22 +69,25 @@ struct NullAllocator
     static shared NullAllocator instance;
 }
 
-@system unittest
+nothrow @nogc pure @safe unittest
 {
-    assert(NullAllocator.instance.alignedAllocate(100, 0) is null);
-    assert(NullAllocator.instance.allocateAll() is null);
-    auto b = NullAllocator.instance.allocate(100);
-    assert(b is null);
-    assert(NullAllocator.instance.expand(b, 0));
-    assert(!NullAllocator.instance.expand(b, 42));
-    assert(!NullAllocator.instance.reallocate(b, 42));
-    assert(!NullAllocator.instance.alignedReallocate(b, 42, 0));
-    NullAllocator.instance.deallocate(b);
-    NullAllocator.instance.deallocateAll();
+    alias a = NullAllocator.instance;
 
-    import stdx.allocator.internal : Ternary;
-    assert(NullAllocator.instance.empty() == Ternary.yes);
-    assert(NullAllocator.instance.owns(null) == Ternary.no);
+    assert(a.alignedAllocate(100, 0) is null);
+    assert(a.allocateAll() is null);
+    auto b = a.allocate(100);
+    assert(b is null);
+    assert(a.expand(b, 0));
+    assert(!a.expand(b, 42));
+    assert(!a.reallocate(b, 42));
+    assert(!a.alignedReallocate(b, 42, 0));
+    assert(a.deallocate(b));
+    assert(a.deallocateAll());
+
+    import std.typecons : Ternary;
+    assert(a.empty == Ternary.yes);
+    assert(a.owns(null) == Ternary.no);
+
     void[] p;
-    assert(NullAllocator.instance.resolveInternalPointer(null, p) == Ternary.no);
+    assert(a.resolveInternalPointer(null, p) == Ternary.no);
 }

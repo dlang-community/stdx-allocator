@@ -1,4 +1,7 @@
-///
+// Written in the D programming language.
+/**
+Source: $(PHOBOSSRC std/experimental/allocator/building_blocks/scoped_allocator.d)
+*/
 module stdx.allocator.building_blocks.scoped_allocator;
 
 import stdx.allocator.common;
@@ -17,14 +20,19 @@ simpler design combining `AllocatorList` with `Region` is recommended.
 */
 struct ScopedAllocator(ParentAllocator)
 {
-    @system unittest
+    static if (!stateSize!ParentAllocator)
     {
-        testAllocator!(() => ScopedAllocator());
+        // This test is available only for stateless allocators
+        version (StdUnittest)
+        @system unittest
+        {
+            testAllocator!(() => ScopedAllocator());
+        }
     }
 
     import stdx.allocator.building_blocks.affix_allocator
         : AffixAllocator;
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
 
     private struct Node
     {
@@ -76,14 +84,10 @@ struct ScopedAllocator(ParentAllocator)
         return parent.goodAllocSize(n);
     }
 
-    /**
-    Allocates memory. For management it actually allocates extra memory from
-    the parent.
-    */
-    void[] allocate(size_t n)
-    {
-        auto b = parent.allocate(n);
-        if (!b.ptr) return b;
+    // Common code shared between allocate and allocateZeroed.
+    private enum _processAndReturnAllocateResult =
+    q{
+       if (!b.ptr) return b;
         Node* toInsert = & parent.prefix(b);
         toInsert.prev = null;
         toInsert.next = root;
@@ -92,6 +96,23 @@ struct ScopedAllocator(ParentAllocator)
         if (root) root.prev = toInsert;
         root = toInsert;
         return b;
+    };
+
+    /**
+    Allocates memory. For management it actually allocates extra memory from
+    the parent.
+    */
+    void[] allocate(size_t n)
+    {
+        auto b = parent.allocate(n);
+        mixin(_processAndReturnAllocateResult);
+    }
+
+    static if (__traits(hasMember, Allocator, "allocateZeroed"))
+    package(stdx) void[] allocateZeroed()(size_t n)
+    {
+        auto b = parent.allocateZeroed(n);
+        mixin(_processAndReturnAllocateResult);
     }
 
     /**
@@ -101,9 +122,9 @@ struct ScopedAllocator(ParentAllocator)
     bool expand(ref void[] b, size_t delta)
     {
         auto result = parent.expand(b, delta);
-        if (result && b.ptr)
+        if (result && b)
         {
-            parent.prefix(b).length = b.length;
+            () @trusted { parent.prefix(b).length = b.length; }();
         }
         return result;
     }
@@ -183,6 +204,7 @@ struct ScopedAllocator(ParentAllocator)
     Returns `Ternary.yes` if this allocator is not responsible for any memory,
     `Ternary.no` otherwise. (Never returns `Ternary.unknown`.)
     */
+    pure nothrow @safe @nogc
     Ternary empty() const
     {
         return Ternary(root is null);
@@ -193,7 +215,7 @@ struct ScopedAllocator(ParentAllocator)
 @system unittest
 {
     import stdx.allocator.mallocator : Mallocator;
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
     ScopedAllocator!Mallocator alloc;
     assert(alloc.empty == Ternary.yes);
     const b = alloc.allocate(10);
@@ -201,6 +223,7 @@ struct ScopedAllocator(ParentAllocator)
     assert(alloc.empty == Ternary.no);
 }
 
+version (StdUnittest)
 @system unittest
 {
     import stdx.allocator.gc_allocator : GCAllocator;
@@ -217,4 +240,63 @@ struct ScopedAllocator(ParentAllocator)
     auto bar = alloc.make!int(2).enforce;
     alloc.dispose(foo);
     alloc.dispose(bar); // segfault here
+}
+
+@system unittest
+{
+    import stdx.allocator.gc_allocator : GCAllocator;
+    ScopedAllocator!GCAllocator a;
+
+    assert(__traits(compiles, (() nothrow @safe @nogc => a.goodAllocSize(0))()));
+
+    // Ensure deallocate inherits from parent allocators
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    () nothrow @nogc { a.deallocate(b); }();
+}
+
+// Test that deallocateAll infers from parent
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : BorrowedRegion;
+
+    ScopedAllocator!(BorrowedRegion!()) a;
+    a.parent.parent = BorrowedRegion!()(new ubyte[1024 * 64]);
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    assert((() pure nothrow @safe @nogc => a.expand(b, 22))());
+    assert(b.length == 64);
+    assert((() nothrow @nogc => a.reallocate(b, 100))());
+    assert(b.length == 100);
+    assert((() nothrow @nogc => a.deallocateAll())());
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : Region;
+    import stdx.allocator.mallocator : Mallocator;
+    import std.typecons : Ternary;
+
+    auto a = Region!(Mallocator)(1024 * 64);
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    assert((() pure nothrow @safe @nogc => a.expand(b, 22))());
+    assert(b.length == 64);
+    assert((() pure nothrow @safe @nogc => a.owns(b))() == Ternary.yes);
+    assert((() nothrow @nogc => a.reallocate(b, 100))());
+    assert(b.length == 100);
+    assert((() pure nothrow @safe @nogc => a.owns(b))() == Ternary.yes);
+    assert((() pure nothrow @safe @nogc => a.owns(null))() == Ternary.no);
+}
+
+// Test empty
+@system unittest
+{
+    import stdx.allocator.mallocator : Mallocator;
+    import std.typecons : Ternary;
+    ScopedAllocator!Mallocator alloc;
+
+    assert((() pure nothrow @safe @nogc => alloc.empty)() == Ternary.yes);
+    const b = alloc.allocate(10);
+    assert((() pure nothrow @safe @nogc => alloc.empty)() == Ternary.no);
 }

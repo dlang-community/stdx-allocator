@@ -1,4 +1,7 @@
-///
+// Written in the D programming language.
+/**
+Source: $(PHOBOSSRC std/experimental/allocator/building_blocks/segregator.d)
+*/
 module stdx.allocator.building_blocks.segregator;
 
 import stdx.allocator.common;
@@ -15,7 +18,8 @@ If both allocators are `shared`, the `Segregator` will also offer
 struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
 {
     import std.algorithm.comparison : min;
-    import stdx.allocator.internal : Ternary;
+    import std.traits : ReturnType;
+    import std.typecons : Ternary;
 
     static if (stateSize!SmallAllocator) private SmallAllocator _small;
     else private alias _small = SmallAllocator.instance;
@@ -212,6 +216,34 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
             return .alignedReallocate(this, b, s, a);
         }
 
+        static if (__traits(hasMember, SmallAllocator, "allocateZeroed")
+                || __traits(hasMember, LargeAllocator, "allocateZeroed"))
+        package(stdx) void[] allocateZeroed()(size_t s)
+        {
+            if (s <= threshold)
+            {
+                static if (__traits(hasMember, SmallAllocator, "allocateZeroed"))
+                    return _small.allocateZeroed(s);
+                else
+                {
+                    auto b = _small.allocate(s);
+                    (() @trusted => (cast(ubyte[]) b)[] = 0)(); // OK even if b is null.
+                    return b;
+                }
+            }
+            else
+            {
+                static if (__traits(hasMember, LargeAllocator, "allocateZeroed"))
+                    return _large.allocateZeroed(s);
+                else
+                {
+                    auto b = _large.allocate(s);
+                    (() @trusted => (cast(ubyte[]) b)[] = 0)(); // OK even if b is null.
+                    return b;
+                }
+            }
+        }
+
         static if (__traits(hasMember, SmallAllocator, "owns")
                 && __traits(hasMember, LargeAllocator, "owns"))
         Ternary owns(void[] b)
@@ -267,7 +299,7 @@ struct Segregator(size_t threshold, SmallAllocator, LargeAllocator)
     else
     {
         static if (!stateSize!SmallAllocator && !stateSize!LargeAllocator)
-            static __gshared Segregator instance;
+            __gshared Segregator instance;
         mixin Impl!();
     }
 }
@@ -361,7 +393,22 @@ if (Args.length > 3)
 
 @system unittest
 {
-    import std.experimental.allocator.building_blocks.bitmapped_block : BitmappedBlock;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.kernighan_ritchie : KRRegion;
+    Segregator!(128, GCAllocator, KRRegion!GCAllocator) alloc;
+    assert((() nothrow @safe @nogc => alloc.goodAllocSize(1))()
+            == GCAllocator.instance.goodAllocSize(1));
+
+    // Note: we infer `shared` from GCAllocator.goodAllocSize so we need a
+    // shared object in order to be able to use the function
+    shared Segregator!(128, GCAllocator, GCAllocator) sharedAlloc;
+    assert((() nothrow @safe @nogc => sharedAlloc.goodAllocSize(1))()
+            == GCAllocator.instance.goodAllocSize(1));
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.bitmapped_block : BitmappedBlock;
     import std.typecons : Ternary;
 
     alias A =
@@ -383,5 +430,91 @@ if (Args.length > 3)
     assert(b.length == 256);
     assert(a.alignedReallocate(b, 42, 512));
     assert(b.length == 42);
-    a.deallocate(b);
+    assert((() pure nothrow @safe @nogc => a.owns(b))() == Ternary.yes);
+    assert((() pure nothrow @safe @nogc => a.owns(null))() == Ternary.no);
+    // Ensure deallocate inherits from parent allocators
+    assert((() nothrow @nogc => a.deallocate(b))());
+    assert(a.empty == Ternary.yes);
+
+    // Test that deallocateAll inherits from parents
+    auto c = a.allocate(42);
+    assert(c.length == 42);
+    assert((() pure nothrow @safe @nogc => a.expand(c, 58))());
+    assert(c.length == 100);
+    assert(a.empty == Ternary.no);
+    assert((() nothrow @nogc => a.deallocateAll())());
+    assert(a.empty == Ternary.yes);
+}
+
+@system unittest
+{
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import std.typecons : Ternary;
+
+    shared Segregator!(1024 * 4, GCAllocator, GCAllocator) a;
+
+    auto b = a.allocate(201);
+    assert(b.length == 201);
+
+    void[] p;
+    assert((() nothrow @safe @nogc => a.resolveInternalPointer(&b[0], p))() == Ternary.yes);
+    assert((() nothrow @safe @nogc => a.resolveInternalPointer(null, p))() == Ternary.no);
+
+    // Ensure deallocate inherits from parent allocators
+    assert((() nothrow @nogc => a.deallocate(b))());
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.bitmapped_block : BitmappedBlockWithInternalPointers;
+    import std.typecons : Ternary;
+
+    alias A =
+        Segregator!(
+            10_240, BitmappedBlockWithInternalPointers!(4096),
+            BitmappedBlockWithInternalPointers!(4096)
+        );
+
+    A a = A(
+            BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024]),
+            BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024])
+    );
+
+    assert((() nothrow @safe @nogc => a.empty)() == Ternary.yes);
+    auto b = a.allocate(201);
+    assert(b.length == 201);
+    assert((() nothrow @safe @nogc => a.empty)() == Ternary.no);
+    assert((() nothrow @nogc => a.deallocate(b))());
+}
+
+// Test that reallocate infers from parent
+@system unittest
+{
+    import stdx.allocator.mallocator : Mallocator;
+
+    alias a = Segregator!(10_240, Mallocator, Mallocator).instance;
+
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    assert((() nothrow @nogc => a.reallocate(b, 100))());
+    assert(b.length == 100);
+    assert((() nothrow @nogc => a.deallocate(b))());
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : BorrowedRegion;
+    import std.typecons : Ternary;
+
+    auto a = Segregator!(10_240, BorrowedRegion!(), BorrowedRegion!())(
+                BorrowedRegion!()(new ubyte[4096 * 1024]),
+                BorrowedRegion!()(new ubyte[4096 * 1024]));
+
+    assert((() nothrow @safe @nogc => a.empty)() == Ternary.yes);
+    auto b = a.alignedAllocate(42, 8);
+    assert(b.length == 42);
+    assert((() nothrow @nogc => a.alignedReallocate(b, 100, 8))());
+    assert(b.length == 100);
+    assert((() nothrow @safe @nogc => a.empty)() == Ternary.no);
+    assert((() nothrow @nogc => a.deallocate(b))());
 }
