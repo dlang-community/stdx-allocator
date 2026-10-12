@@ -24,7 +24,6 @@ struct ScopedAllocator(ParentAllocator)
 
     import stdx.allocator.building_blocks.affix_allocator
         : AffixAllocator;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     private struct Node
@@ -98,7 +97,7 @@ struct ScopedAllocator(ParentAllocator)
     /**
     Forwards to $(D parent.expand(b, delta)).
     */
-    static if (hasMember!(Allocator, "expand"))
+    static if (__traits(hasMember, Allocator, "expand"))
     bool expand(ref void[] b, size_t delta)
     {
         auto result = parent.expand(b, delta);
@@ -139,7 +138,7 @@ struct ScopedAllocator(ParentAllocator)
     /**
     Forwards to $(D parent.owns(b)).
     */
-    static if (hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "owns"))
     Ternary owns(void[] b)
     {
         return parent.owns(b);
@@ -148,7 +147,7 @@ struct ScopedAllocator(ParentAllocator)
     /**
     Deallocates $(D b).
     */
-    static if (hasMember!(Allocator, "deallocate"))
+    static if (__traits(hasMember, Allocator, "deallocate"))
     bool deallocate(void[] b)
     {
         // Remove from list

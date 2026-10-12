@@ -96,7 +96,6 @@ information is available in client code at deallocation time.)
 struct KRRegion(ParentAllocator = NullAllocator)
 {
     import stdx.allocator.common : stateSize, alignedAt;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     private static struct Node
@@ -343,7 +342,7 @@ struct KRRegion(ParentAllocator = NullAllocator)
 
     /// Ditto
     static if (!is(ParentAllocator == NullAllocator)
-        && hasMember!(ParentAllocator, "deallocate"))
+        && __traits(hasMember, ParentAllocator, "deallocate"))
     ~this()
     {
         parent.deallocate(payload);

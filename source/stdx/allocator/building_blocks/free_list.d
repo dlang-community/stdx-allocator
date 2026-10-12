@@ -30,7 +30,6 @@ struct FreeList(ParentAllocator,
 {
     import std.conv : text;
     import std.exception : enforce;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     static assert(minSize != unbounded, "Use minSize = 0 for no low bound.");
@@ -354,7 +353,7 @@ struct FreeList(ParentAllocator,
             root.next = t;
             return true;
         }
-        static if (hasMember!(ParentAllocator, "deallocate"))
+        static if (__traits(hasMember, ParentAllocator, "deallocate"))
             return parent.deallocate(block);
         else
             return false;
@@ -364,7 +363,7 @@ struct FreeList(ParentAllocator,
     Defined only if $(D ParentAllocator) defines $(D deallocateAll). If so,
     forwards to it and resets the freelist.
     */
-    static if (hasMember!(ParentAllocator, "deallocateAll"))
+    static if (__traits(hasMember, ParentAllocator, "deallocateAll"))
     bool deallocateAll()
     {
         root = null;
@@ -376,7 +375,7 @@ struct FreeList(ParentAllocator,
     freeing each element in turn. Defined only if $(D ParentAllocator) defines
     $(D deallocate).
     */
-    static if (hasMember!(ParentAllocator, "deallocate") && !unchecked)
+    static if (__traits(hasMember, ParentAllocator, "deallocate") && !unchecked)
     void minimize()
     {
         while (root)
@@ -429,7 +428,6 @@ struct ContiguousFreeList(ParentAllocator,
         : NullAllocator;
     import stdx.allocator.building_blocks.stats_collector
         : StatsCollector, Options;
-    import std.traits : hasMember;
     import stdx.allocator.internal : Ternary;
 
     alias Impl = FreeList!(NullAllocator, minSize, maxSize);
@@ -610,7 +608,7 @@ struct ContiguousFreeList(ParentAllocator,
     Defined if `ParentAllocator` defines it. Checks whether the block
     belongs to this allocator.
     */
-    static if (hasMember!(SParent, "owns") || unchecked)
+    static if (__traits(hasMember, SParent, "owns") || unchecked)
     Ternary owns(void[] b)
     {
         if (support.ptr <= b.ptr && b.ptr < support.ptr + support.length)
@@ -649,7 +647,7 @@ struct ContiguousFreeList(ParentAllocator,
     /**
     Deallocates everything from the parent.
     */
-    static if (hasMember!(ParentAllocator, "deallocateAll")
+    static if (__traits(hasMember, ParentAllocator, "deallocateAll")
         && stateSize!ParentAllocator)
     bool deallocateAll()
     {
@@ -756,7 +754,6 @@ struct SharedFreeList(ParentAllocator,
 {
     import std.conv : text;
     import std.exception : enforce;
-    import std.traits : hasMember;
 
     static assert(approxMaxNodes, "approxMaxNodes must not be null.");
     static assert(minSize != unbounded, "Use minSize = 0 for no low bound.");
@@ -930,14 +927,14 @@ struct SharedFreeList(ParentAllocator,
     }
 
     /// Ditto
-    static if (hasMember!(ParentAllocator, "owns"))
+    static if (__traits(hasMember, ParentAllocator, "owns"))
     Ternary owns(void[] b) shared const
     {
         return parent.owns(b);
     }
 
     /// Ditto
-    static if (hasMember!(ParentAllocator, "reallocate"))
+    static if (__traits(hasMember, ParentAllocator, "reallocate"))
     bool reallocate(ref void[] b, size_t s) shared
     {
         return parent.reallocate(b, s);
@@ -986,7 +983,7 @@ struct SharedFreeList(ParentAllocator,
             lock.unlock();
             return true;
         }
-        static if (hasMember!(ParentAllocator, "deallocate"))
+        static if (__traits(hasMember, ParentAllocator, "deallocate"))
             return parent.deallocate(b);
         else
             return false;
@@ -998,11 +995,11 @@ struct SharedFreeList(ParentAllocator,
         bool result = false;
         lock.lock();
         scope(exit) lock.unlock();
-        static if (hasMember!(ParentAllocator, "deallocateAll"))
+        static if (__traits(hasMember, ParentAllocator, "deallocateAll"))
         {
             result = parent.deallocateAll();
         }
-        else static if (hasMember!(ParentAllocator, "deallocate"))
+        else static if (__traits(hasMember, ParentAllocator, "deallocate"))
         {
             result = true;
             for (auto n = _root; n;)
@@ -1023,7 +1020,7 @@ struct SharedFreeList(ParentAllocator,
     freeing each element in turn. Defined only if $(D ParentAllocator) defines
     $(D deallocate).
     */
-    static if (hasMember!(ParentAllocator, "deallocate") && !unchecked)
+    static if (__traits(hasMember, ParentAllocator, "deallocate") && !unchecked)
     void minimize() shared
     {
         lock.lock();
