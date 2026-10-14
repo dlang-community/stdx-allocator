@@ -100,12 +100,12 @@ private void emplaceInitializer(T)(ref T chunk) @trusted pure nothrow
 
 // emplace
 /**
-Given a pointer $(D chunk) to uninitialized memory (but already typed
-as $(D T)), constructs an object of non-$(D class) type $(D T) at that
+Given a pointer `chunk` to uninitialized memory (but already typed
+as `T`), constructs an object of non-`class` type `T` at that
 address. If `T` is a class, initializes the class reference to null.
 
 Returns: A pointer to the newly constructed object (which is the same
-as $(D chunk)).
+as `chunk`).
  */
 T* emplace(T)(T* chunk) @safe pure nothrow
 {
@@ -141,16 +141,16 @@ T* emplace(T)(T* chunk) @safe pure nothrow
 }
 
 /**
-Given a pointer $(D chunk) to uninitialized memory (but already typed
-as a non-class type $(D T)), constructs an object of type $(D T) at
-that address from arguments $(D args). If `T` is a class, initializes
+Given a pointer `chunk` to uninitialized memory (but already typed
+as a non-class type `T`), constructs an object of type `T` at
+that address from arguments `args`. If `T` is a class, initializes
 the class reference to `args[0]`.
 
-This function can be $(D @trusted) if the corresponding constructor of
-$(D T) is $(D @safe).
+This function can be `@trusted` if the corresponding constructor of
+`T` is `@safe`.
 
 Returns: A pointer to the newly constructed object (which is the same
-as $(D chunk)).
+as `chunk`).
  */
 T* emplace(T, Args...)(T* chunk, auto ref Args args)
 if (is(T == struct) || Args.length == 1)
@@ -294,7 +294,7 @@ this field is essential to access members of the outer class inside `T` methods.
 Preconditions:
 `chunk` must be at least as large as `T` needs and should have an alignment
 multiple of `T`'s alignment. (The size of a `class` instance is obtained by using
-$(D __traits(classInstanceSize, T))).
+`__traits(classInstanceSize, T)`).
 
 Note:
 This function can be `@trusted` if the corresponding constructor of `T` is `@safe`.
@@ -352,18 +352,18 @@ if (is(T == class))
 }
 
 /**
-Given a raw memory area $(D chunk), constructs an object of non-$(D
-class) type $(D T) at that address. The constructor is passed the
-arguments $(D args), if any.
+Given a raw memory area `chunk`, constructs an object of non-
+`class` type `T` at that address. The constructor is passed the
+arguments `args`, if any.
 
 Preconditions:
-$(D chunk) must be at least as large
-as $(D T) needs and should have an alignment multiple of $(D T)'s
+`chunk` must be at least as large
+as `T` needs and should have an alignment multiple of `T`'s
 alignment.
 
 Note:
-This function can be $(D @trusted) if the corresponding constructor of
-$(D T) is $(D @safe).
+This function can be `@trusted` if the corresponding constructor of
+`T` is `@safe`.
 
 Returns: A pointer to the newly constructed object.
  */
