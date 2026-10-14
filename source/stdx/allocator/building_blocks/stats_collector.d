@@ -158,7 +158,7 @@ struct StatsCollector(Allocator, ulong flags = Options.all,
     ulong perCallFlags = 0)
 {
 private:
-    import std.traits : hasMember, Signed;
+    import std.traits : Signed;
     import stdx.allocator.internal : Ternary;
 
     static string define(string type, string[] names...)
@@ -283,7 +283,7 @@ public:
     Increments `numOwns` (per instance and and per call) and forwards to
     `parent.owns(b)`.
     */
-    static if (hasMember!(Allocator, "owns"))
+    static if (__traits(hasMember, Allocator, "owns"))
     {
         static if ((perCallFlags & Options.numOwns) == 0)
         Ternary owns(void[] b)
@@ -358,7 +358,7 @@ public:
     {
         up!"numExpand";
         Signed!size_t slack = 0;
-        static if (!hasMember!(Allocator, "expand"))
+        static if (!__traits(hasMember, Allocator, "expand"))
         {
             auto result = s == 0;
         }
@@ -483,13 +483,13 @@ public:
         add!"bytesUsed"(-Signed!size_t(b.length));
         add!"bytesSlack"(-(this.goodAllocSize(b.length) - b.length));
         addPerCall!(f, n, "numDeallocate", "bytesContracted")(1, b.length);
-        static if (hasMember!(Allocator, "deallocate"))
+        static if (__traits(hasMember, Allocator, "deallocate"))
             return parent.deallocate(b);
         else
             return false;
     }
 
-    static if (hasMember!(Allocator, "deallocateAll"))
+    static if (__traits(hasMember, Allocator, "deallocateAll"))
     {
         /**
         Defined only if `Allocator.deallocateAll` is defined. Affects
