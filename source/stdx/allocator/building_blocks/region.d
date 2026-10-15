@@ -898,12 +898,12 @@ version (CRuntime_Musl)
     // https://git.musl-libc.org/cgit/musl/commit/?id=7a995fe706e519a4f55399776ef0df9596101f93
     // https://git.musl-libc.org/cgit/musl/commit/?id=863d628d93ea341b6a32661a1654320ce69f6a07
 }
-version (CRuntime_WASI)
+else version (CRuntime_WASI)
 {
     // sbrk is very limited (only PAGE_SIZE increments, and only able to grow)
     // brk has not been implemented
 }
-version (DragonFlyBSD)
+else version (DragonFlyBSD)
 {
     // sbrk is deprecated in favor of mmap   (we could implement a mmap + MAP_NORESERVE + PROT_NONE version)
     // brk has been removed
