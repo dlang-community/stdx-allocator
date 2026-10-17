@@ -4,14 +4,17 @@ Allocator that collects useful statistics about allocations, both global and per
 calling point. The statistics collected can be configured statically by choosing
 combinations of `Options` appropriately.
 
-Example:
-----
-import stdx.allocator.gc_allocator : GCAllocator;
-import stdx.allocator.building_blocks.free_list : FreeList;
-alias Allocator = StatsCollector!(GCAllocator, Options.bytesUsed);
-----
+Source: $(PHOBOSSRC std/experimental/allocator/building_blocks/stats_collector.d)
 */
 module stdx.allocator.building_blocks.stats_collector;
+
+///
+@safe unittest
+{
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import stdx.allocator.building_blocks.free_list : FreeList;
+    alias Allocator = StatsCollector!(GCAllocator, Options.bytesUsed);
+}
 
 import stdx.allocator.common;
 
@@ -74,41 +77,52 @@ enum Options : ulong
     */
     numDeallocateAll = 1u << 9,
     /**
+    Counts the number of calls to `alignedAllocate`. All calls are counted,
+    including requests for zero bytes or failed requests.
+    */
+    numAlignedAllocate = 1u << 10,
+    /**
+    Counts the number of calls to `alignedAllocate` that succeeded, i.e. they
+    returned a block as large as requested. (N.B. requests for zero bytes count
+    as successful.)
+    */
+    numAlignedAllocateOk = 1u << 11,
+    /**
     Chooses all `numXxx` flags.
     */
-    numAll = (1u << 10) - 1,
+    numAll = (1u << 12) - 1,
     /**
     Tracks bytes currently allocated by this allocator. This number goes up
     and down as memory is allocated and deallocated, and is zero if the
     allocator currently has no active allocation.
     */
-    bytesUsed = 1u << 10,
+    bytesUsed = 1u << 12,
     /**
     Tracks total cumulative bytes allocated by means of `allocate`,
     `expand`, and `reallocate` (when resulting in an expansion). This
     number always grows and indicates allocation traffic. To compute bytes
     deallocated cumulatively, subtract `bytesUsed` from `bytesAllocated`.
     */
-    bytesAllocated = 1u << 11,
+    bytesAllocated = 1u << 13,
     /**
     Tracks the sum of all `delta` values in calls of the form
     `expand(b, delta)` that succeed (return `true`).
     */
-    bytesExpanded = 1u << 12,
+    bytesExpanded = 1u << 14,
     /**
     Tracks the sum of all `b.length - s` with `b.length > s` in calls of
     the form `realloc(b, s)` that succeed (return `true`). In per-call
     statistics, also unambiguously counts the bytes deallocated with
     `deallocate`.
     */
-    bytesContracted = 1u << 13,
+    bytesContracted = 1u << 15,
     /**
     Tracks the sum of all bytes moved as a result of calls to `realloc` that
     were unable to reallocate in place. A large number (relative to
     `bytesAllocated`) indicates that the application should use larger
     preallocations.
     */
-    bytesMoved = 1u << 14,
+    bytesMoved = 1u << 16,
     /**
     Tracks the sum of all bytes NOT moved as result of calls to `realloc`
     that managed to reallocate in place. A large number (relative to
@@ -117,26 +131,26 @@ enum Options : ulong
     small and `bytesSlack` is high, it means the application is
     overallocating for little benefit.
     */
-    bytesNotMoved = 1u << 15,
+    bytesNotMoved = 1u << 17,
     /**
     Measures the sum of extra bytes allocated beyond the bytes requested, i.e.
-    the $(HTTP goo.gl/YoKffF, internal fragmentation). This is the current
+    the $(HTTPS en.wikipedia.org/wiki/Fragmentation_(computing)#Internal_fragmentation, internal fragmentation). This is the current
     effective number of slack bytes, and it goes up and down with time.
     */
-    bytesSlack = 1u << 16,
+    bytesSlack = 1u << 18,
     /**
     Measures the maximum bytes allocated over the time. This is useful for
     dimensioning allocators.
     */
-    bytesHighTide = 1u << 17,
+    bytesHighTide = 1u << 19,
     /**
     Chooses all `byteXxx` flags.
     */
-    bytesAll = ((1u << 18) - 1) & ~numAll,
+    bytesAll = ((1u << 20) - 1) & ~numAll,
     /**
     Combines all flags above.
     */
-    all = (1u << 18) - 1
+    all = (1u << 20) - 1
 }
 
 /**
@@ -159,7 +173,7 @@ struct StatsCollector(Allocator, ulong flags = Options.all,
 {
 private:
     import std.traits : Signed;
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
 
     static string define(string type, string[] names...)
     {
@@ -225,6 +239,10 @@ private:
         /// Ditto
         @property ulong numDeallocateAll() const;
         /// Ditto
+        @property ulong numAlignedAllocate() const;
+        /// Ditto
+        @property ulong numAlignedAllocateOk() const;
+        /// Ditto
         @property ulong bytesUsed() const;
         /// Ditto
         @property ulong bytesAllocated() const;
@@ -264,6 +282,8 @@ private:
         "numReallocateInPlace",
         "numDeallocate",
         "numDeallocateAll",
+        "numAlignedAllocate",
+        "numAlignedAllocateOk",
         "bytesUsed",
         "bytesAllocated",
         "bytesExpanded",
@@ -289,7 +309,7 @@ public:
         Ternary owns(void[] b)
         { return ownsImpl(b); }
         else
-        Ternary owns(string f = __FILE, uint n = line)(void[] b)
+        Ternary owns(string f = __FILE__, uint n = __LINE__)(void[] b)
         { return ownsImpl!(f, n)(b); }
     }
 
@@ -320,9 +340,9 @@ public:
         { return allocateImpl!(f, n)(bytes); }
     }
 
-    private void[] allocateImpl(string f = null, ulong n = 0)(size_t bytes)
-    {
-        auto result = parent.allocate(bytes);
+    // Common code currently shared between allocateImpl and allocateZeroedImpl.
+    private enum _updateStatsForAllocateResult =
+    q{
         add!"bytesUsed"(result.length);
         add!"bytesAllocated"(result.length);
         immutable slack = this.goodAllocSize(result.length) - result.length;
@@ -331,6 +351,83 @@ public:
         add!"numAllocateOK"(result.length == bytes); // allocating 0 bytes is OK
         addPerCall!(f, n, "numAllocate", "numAllocateOK", "bytesAllocated")
             (1, result.length == bytes, result.length);
+    };
+
+    private void[] allocateImpl(string f = null, ulong n = 0)(size_t bytes)
+    {
+        auto result = parent.allocate(bytes);
+        mixin(_updateStatsForAllocateResult);
+        return result;
+    }
+
+    static if (__traits(hasMember, Allocator, "allocateZeroed"))
+    {
+        static if (!(perCallFlags
+            & (Options.numAllocate | Options.numAllocateOK
+                | Options.bytesAllocated)))
+        {
+            package(stdx) void[] allocateZeroed()(size_t n)
+            { return allocateZeroedImpl(n); }
+        }
+        else
+        {
+            package(stdx) void[] allocateZeroed(string f = __FILE__, ulong n = __LINE__)
+                (size_t bytes)
+            { return allocateZeroedImpl!(f, n)(bytes); }
+        }
+
+        private void[] allocateZeroedImpl(string f = null, ulong n = 0)(size_t bytes)
+        {
+            auto result = parent.allocateZeroed(bytes);
+            // Note: calls to `allocateZeroed` are counted for statistical purposes
+            // as if they were calls to `allocate`. If/when `allocateZeroed` is made
+            // public it might be of interest to count such calls separately.
+            mixin(_updateStatsForAllocateResult);
+            return result;
+        }
+    }
+
+    /**
+    Forwards to `parent.alignedAllocate`. Affects per instance: `numAlignedAllocate`,
+    `bytesUsed`, `bytesAllocated`, `bytesSlack`, `numAlignedAllocateOk`,
+    and `bytesHighTide`. Affects per call: `numAlignedAllocate`, `numAlignedAllocateOk`,
+    and `bytesAllocated`.
+    */
+    static if (!(perCallFlags
+        & (Options.numAlignedAllocate | Options.numAlignedAllocateOk
+            | Options.bytesAllocated)))
+    {
+        void[] alignedAllocate(size_t n, uint a)
+        { return alignedAllocateImpl(n, a); }
+    }
+    else
+    {
+        void[] alignedAllocate(string f = __FILE__, ulong n = __LINE__)
+            (size_t bytes, uint a)
+        { return alignedAllocateImpl!(f, n)(bytes, a); }
+    }
+
+    private void[] alignedAllocateImpl(string f = null, ulong n = 0)(size_t bytes, uint a)
+    {
+        up!"numAlignedAllocate";
+        static if (!__traits(hasMember, Allocator, "alignedAllocate"))
+        {
+            if (bytes == 0)
+                up!"numAlignedAllocateOk";
+            void[] result = null;
+        }
+        else
+        {
+            auto result = parent.alignedAllocate(bytes, a);
+            add!"bytesUsed"(result.length);
+            add!"bytesAllocated"(result.length);
+            immutable slack = this.goodAllocSize(result.length) - result.length;
+            add!"bytesSlack"(slack);
+            add!"numAlignedAllocateOk"(result.length == bytes); // allocating 0 bytes is OK
+        }
+        addPerCall!(f, n, "numAlignedAllocate", "numAlignedAllocateOk", "bytesAllocated")
+            (1, result.length == bytes, result.length);
+
         return result;
     }
 
@@ -517,6 +614,7 @@ public:
     `bytesUsed == 0`.
     */
     static if (flags & Options.bytesUsed)
+    pure nothrow @safe @nogc
     Ternary empty()
     {
         return Ternary(_bytesUsed == 0);
@@ -631,7 +729,7 @@ public:
         private void addPerCall(string f, uint n, names...)(ulong[] values...)
         {
             import std.array : join;
-            enum uint mask = mixin("Options."~[names].join("|Options."));
+            enum ulong mask = mixin("Options."~[names].join("|Options."));
             static if (perCallFlags & mask)
             {
                 // Per allocation info
@@ -665,18 +763,15 @@ public:
     alloc.reallocate(b, 20);
     alloc.deallocate(b);
 
-    static if (__VERSION__ >= 2073)
-    {
-        import std.file : deleteme, remove;
-        import std.range : walkLength;
-        import std.stdio : File;
+    import std.file : deleteme, remove;
+    import std.range : walkLength;
+    import std.stdio : File;
 
-        auto f = deleteme ~ "-dlang.stdx.allocator.stats_collector.txt";
-        scope(exit) remove(f);
-        Allocator.reportPerCallStatistics(File(f, "w"));
-        alloc.reportStatistics(File(f, "a"));
-        assert(File(f).byLine.walkLength == 22);
-    }
+    auto f = deleteme ~ "-dlang.stdx.allocator.stats_collector.txt";
+    scope(exit) remove(f);
+    Allocator.reportPerCallStatistics(File(f, "w"));
+    alloc.reportStatistics(File(f, "a"));
+    assert(File(f).byLine.walkLength == 24);
 }
 
 @system unittest
@@ -684,11 +779,13 @@ public:
     void test(Allocator)()
     {
         import std.range : walkLength;
-        import std.stdio : writeln;
+        import std.typecons : Ternary;
+
         Allocator a;
+        assert((() pure nothrow @safe @nogc => a.empty)() == Ternary.yes);
         auto b1 = a.allocate(100);
         assert(a.numAllocate == 1);
-        assert(a.expand(b1, 0));
+        assert((() nothrow @safe => a.expand(b1, 0))());
         assert(a.reallocate(b1, b1.length + 1));
         auto b2 = a.allocate(101);
         assert(a.numAllocate == 2);
@@ -697,12 +794,13 @@ public:
         auto b3 = a.allocate(202);
         assert(a.numAllocate == 3);
         assert(a.bytesAllocated == 404);
+        assert((() pure nothrow @safe @nogc => a.empty)() == Ternary.no);
 
-        a.deallocate(b2);
+        () nothrow @nogc { a.deallocate(b2); }();
         assert(a.numDeallocate == 1);
-        a.deallocate(b1);
+        () nothrow @nogc { a.deallocate(b1); }();
         assert(a.numDeallocate == 2);
-        a.deallocate(b3);
+        () nothrow @nogc { a.deallocate(b3); }();
         assert(a.numDeallocate == 3);
         assert(a.numAllocate == a.numDeallocate);
         assert(a.bytesUsed == 0);
@@ -720,19 +818,73 @@ public:
     void test(Allocator)()
     {
         import std.range : walkLength;
-        import std.stdio : writeln;
         Allocator a;
         auto b1 = a.allocate(100);
-        assert(a.expand(b1, 0));
+        assert((() nothrow @safe => a.expand(b1, 0))());
         assert(a.reallocate(b1, b1.length + 1));
         auto b2 = a.allocate(101);
         auto b3 = a.allocate(202);
 
-        a.deallocate(b2);
-        a.deallocate(b1);
-        a.deallocate(b3);
+        () nothrow @nogc { a.deallocate(b2); }();
+        () nothrow @nogc { a.deallocate(b1); }();
+        () nothrow @nogc { a.deallocate(b3); }();
     }
     import stdx.allocator.building_blocks.free_list : FreeList;
     import stdx.allocator.gc_allocator : GCAllocator;
     test!(StatsCollector!(GCAllocator, 0, 0));
+}
+
+@system unittest
+{
+    import stdx.allocator.gc_allocator : GCAllocator;
+    StatsCollector!(GCAllocator, 0, 0) a;
+
+    // calls stdx.allocator.common.goodAllocSize
+    assert((() pure nothrow @safe @nogc => a.goodAllocSize(1))());
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : BorrowedRegion;
+
+    auto a = StatsCollector!(BorrowedRegion!(), Options.all, Options.all)(BorrowedRegion!()(new ubyte[1024 * 64]));
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    // Test that reallocate infers from parent
+    assert((() nothrow @nogc => a.reallocate(b, 100))());
+    assert(b.length == 100);
+    // Test that deallocateAll infers from parent
+    assert((() nothrow @nogc => a.deallocateAll())());
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : BorrowedRegion;
+
+    auto a = StatsCollector!(BorrowedRegion!(), Options.all)(BorrowedRegion!()(new ubyte[1024 * 64]));
+    auto b = a.alignedAllocate(42, 128);
+    assert(b.length == 42);
+    assert(b.ptr.alignedAt(128));
+    assert(a.numAlignedAllocate == 1);
+    assert(a.numAlignedAllocateOk == 1);
+    assert(a.bytesUsed == 42);
+
+    b = a.alignedAllocate(23, 256);
+    assert(b.length == 23);
+    assert(b.ptr.alignedAt(256));
+    assert(a.numAlignedAllocate == 2);
+    assert(a.numAlignedAllocateOk == 2);
+    assert(a.bytesUsed == 65);
+
+    b = a.alignedAllocate(0, 512);
+    assert(b.length == 0);
+    assert(a.numAlignedAllocate == 3);
+    assert(a.numAlignedAllocateOk == 3);
+    assert(a.bytesUsed == 65);
+
+    b = a.alignedAllocate(1024 * 1024, 512);
+    assert(b is null);
+    assert(a.numAlignedAllocate == 4);
+    assert(a.numAlignedAllocateOk == 3);
+    assert(a.bytesUsed == 65);
 }

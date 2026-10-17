@@ -1,9 +1,12 @@
+// Written in the D programming language.
 /**
 This module defines `TypedAllocator`, a statically-typed allocator that
 aggregates multiple untyped allocators and uses them depending on the static
 properties of the types allocated. For example, distinct allocators may be used
 for thread-local vs. thread-shared data, or for fixed-size data (`struct`,
 `class` objects) vs. resizable data (arrays).
+
+Source: $(PHOBOSSRC std/experimental/allocator/typed.d)
 
 Macros:
 T2=$(TR <td style="text-align:left">`$1`</td> $(TD $(ARGS $+)))
@@ -15,7 +18,7 @@ import stdx.allocator;
 import stdx.allocator.common;
 import std.range : isInputRange, isForwardRange, walkLength, save, empty,
     front, popFront;
-import std.traits : isPointer, hasElaborateDestructor;
+import std.traits : isPointer;
 import std.typecons : Flag, Yes, No;
 
 /**
@@ -25,7 +28,7 @@ allocator accordingly.
 */
 enum AllocFlag : uint
 {
-    init = 0,
+    _init = 0,
     /**
     Fixed-size allocation (unlikely to get reallocated later). Examples: `int`,
     `double`, any `struct` or `class` type. By default it is assumed that the
@@ -391,7 +394,8 @@ struct TypedAllocator(PrimaryAllocator, Policies...)
 }
 
 ///
-@system unittest
+version (WebAssembly) {}
+else @system unittest
 {
     import stdx.allocator.gc_allocator : GCAllocator;
     import stdx.allocator.mallocator : Mallocator;
@@ -402,9 +406,10 @@ struct TypedAllocator(PrimaryAllocator, Policies...)
                 | AllocFlag.hasNoIndirections,
             MmapAllocator,
     );
+
     MyAllocator a;
     auto b = &a.allocatorFor!0();
-    static assert(is(typeof(*b) == shared GCAllocator));
+    static assert(is(typeof(*b) == shared const(GCAllocator)));
     enum f1 = AllocFlag.fixedSize | AllocFlag.threadLocal;
     auto c = &a.allocatorFor!f1();
     static assert(is(typeof(*c) == Mallocator));

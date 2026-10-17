@@ -1,4 +1,7 @@
-///
+// Written in the D programming language.
+/**
+Source: $(PHOBOSSRC std/experimental/allocator/building_blocks/fallback_allocator.d)
+*/
 module stdx.allocator.building_blocks.fallback_allocator;
 
 import stdx.allocator.common;
@@ -21,8 +24,12 @@ up by the `GCAllocator`.
 struct FallbackAllocator(Primary, Fallback)
 {
     import std.algorithm.comparison : min;
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
 
+    // Need both allocators to be stateless
+    // This is to avoid using default initialized stateful allocators
+    static if (!stateSize!Primary && !stateSize!Fallback)
+    version (StdUnittest)
     @system unittest
     {
         testAllocator!(() => FallbackAllocator());
@@ -58,6 +65,38 @@ struct FallbackAllocator(Primary, Fallback)
     {
         auto result = primary.allocate(s);
         return result.length == s ? result : fallback.allocate(s);
+    }
+
+    static if (__traits(hasMember, Primary, "allocateZeroed")
+            || (__traits(hasMember, Fallback, "allocateZeroed")))
+    package(stdx) void[] allocateZeroed()(size_t s)
+    {
+        // Try to allocate with primary.
+        static if (__traits(hasMember, Primary, "allocateZeroed"))
+        {
+            void[] result = primary.allocateZeroed(s);
+            if (result.length == s) return result;
+        }
+        else
+        {
+            void[] result = primary.allocate(s);
+            if (result.length == s)
+            {
+                (() @trusted => (cast(ubyte[]) result)[] = 0)();
+                return result;
+            }
+        }
+        // Allocate with fallback.
+        static if (__traits(hasMember, Fallback, "allocateZeroed"))
+        {
+            return fallback.allocateZeroed(s);
+        }
+        else
+        {
+            result = fallback.allocate(s);
+            (() @trusted => (cast(ubyte[]) result)[] = 0)(); // OK even if result is null.
+            return result;
+        }
     }
 
     /**
@@ -246,7 +285,8 @@ struct FallbackAllocator(Primary, Fallback)
 
     Returns: `primary.empty & fallback.empty`
     */
-    static if (__traits(hasMember, Primary, "empty") && __traits(hasMember, Fallback, "empty"))
+    static if (__traits(hasMember, Primary, "empty")
+               && __traits(hasMember, Fallback, "empty"))
     Ternary empty()
     {
         return primary.empty & fallback.empty;
@@ -258,17 +298,94 @@ struct FallbackAllocator(Primary, Fallback)
     import std.conv : text;
     import stdx.allocator.building_blocks.region : InSituRegion;
     import stdx.allocator.gc_allocator : GCAllocator;
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
     FallbackAllocator!(InSituRegion!16_384, GCAllocator) a;
     // This allocation uses the stack
     auto b1 = a.allocate(1024);
     assert(b1.length == 1024, text(b1.length));
-    assert(a.primary.owns(b1) == Ternary.yes);
-    // This large allocation will go to the Mallocator
+    assert((() pure nothrow @safe @nogc => a.primary.owns(b1))() == Ternary.yes);
+    assert((() nothrow => a.reallocate(b1, 2048))());
+    assert(b1.length == 2048, text(b1.length));
+    assert((() pure nothrow @safe @nogc => a.primary.owns(b1))() == Ternary.yes);
+    // This large allocation will go to the GCAllocator
     auto b2 = a.allocate(1024 * 1024);
-    assert(a.primary.owns(b2) == Ternary.no);
-    a.deallocate(b1);
-    a.deallocate(b2);
+    assert((() pure nothrow @safe @nogc => a.primary.owns(b2))() == Ternary.no);
+    // Ensure deallocate inherits from parent allocators
+    () nothrow @nogc { a.deallocate(b1); }();
+    () nothrow @nogc { a.deallocate(b2); }();
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.bitmapped_block : BitmappedBlockWithInternalPointers;
+    import std.typecons : Ternary;
+
+    alias A =
+        FallbackAllocator!(
+            BitmappedBlockWithInternalPointers!(4096),
+            BitmappedBlockWithInternalPointers!(4096)
+        );
+
+    A a = A(
+            BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024]),
+            BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024])
+    );
+
+    assert((() nothrow @safe @nogc => a.empty)() == Ternary.yes);
+    auto b = a.allocate(201);
+    assert(b.length == 201);
+    assert(a.reallocate(b, 202));
+    assert(b.length == 202);
+    assert((() nothrow @safe @nogc => a.empty)() == Ternary.no);
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : BorrowedRegion;
+    import std.typecons : Ternary;
+
+    auto a = FallbackAllocator!(BorrowedRegion!(), BorrowedRegion!())(
+                BorrowedRegion!()(new ubyte[4096 * 1024]),
+                BorrowedRegion!()(new ubyte[4096 * 1024]));
+
+    auto b = a.alignedAllocate(42, 8);
+    assert(b.length == 42);
+    assert((() nothrow @nogc => a.alignedReallocate(b, 100, 8))());
+    assert(b.length == 100);
+}
+
+version (StdUnittest)
+@system unittest
+{
+    import stdx.allocator.building_blocks.bitmapped_block : BitmappedBlockWithInternalPointers;
+    import std.typecons : Ternary;
+
+    alias A =
+        FallbackAllocator!(
+            BitmappedBlockWithInternalPointers!(4096),
+            BitmappedBlockWithInternalPointers!(4096)
+        );
+
+    // Run testAllocator here since both allocators stateful
+    testAllocator!(
+        () => A(
+            BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024]),
+            BitmappedBlockWithInternalPointers!(4096)(new ubyte[4096 * 1024])
+        )
+    );
+}
+
+@system unittest
+{
+    import stdx.allocator.mallocator : Mallocator;
+    import std.typecons : Ternary;
+
+    alias a = FallbackAllocator!(Mallocator, Mallocator).instance;
+
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    assert((() nothrow @nogc => a.reallocate(b, 100))());
+    assert(b.length == 100);
 }
 
 /*
@@ -343,7 +460,7 @@ fallbackAllocator(Primary, Fallback)(auto ref Primary p, auto ref Fallback f)
 {
     import stdx.allocator.building_blocks.region : Region;
     import stdx.allocator.gc_allocator : GCAllocator;
-    import stdx.allocator.internal : Ternary;
+    import std.typecons : Ternary;
     auto a = fallbackAllocator(Region!GCAllocator(1024), GCAllocator.instance);
     auto b1 = a.allocate(1020);
     assert(b1.length == 1020);
@@ -351,4 +468,52 @@ fallbackAllocator(Primary, Fallback)(auto ref Primary p, auto ref Fallback f)
     auto b2 = a.allocate(10);
     assert(b2.length == 10);
     assert(a.primary.owns(b2) == Ternary.no);
+}
+
+version (StdUnittest)
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : Region;
+    import stdx.allocator.gc_allocator : GCAllocator;
+    testAllocator!(() => fallbackAllocator(Region!GCAllocator(1024), GCAllocator.instance));
+}
+
+// Ensure `owns` inherits function attributes
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : InSituRegion;
+    import std.typecons : Ternary;
+
+    FallbackAllocator!(InSituRegion!16_384, InSituRegion!16_384) a;
+    auto buff = a.allocate(42);
+    assert((() pure nothrow @safe @nogc => a.owns(buff))() == Ternary.yes);
+}
+
+@system unittest
+{
+    import stdx.allocator.gc_allocator : GCAllocator;
+    import std.typecons : Ternary;
+
+    auto a = fallbackAllocator(GCAllocator.instance, GCAllocator.instance);
+    auto b = a.allocate(1020);
+    assert(b.length == 1020);
+
+    void[] p;
+    assert((() nothrow @safe @nogc => a.resolveInternalPointer(null, p))() == Ternary.no);
+    assert((() nothrow @safe @nogc => a.resolveInternalPointer(&b[0], p))() == Ternary.yes);
+}
+
+@system unittest
+{
+    import stdx.allocator.building_blocks.region : BorrowedRegion;
+    import std.typecons : Ternary;
+
+    alias A = FallbackAllocator!(BorrowedRegion!(), BorrowedRegion!());
+    auto a = A(BorrowedRegion!()(new ubyte[16_384]), BorrowedRegion!()(new ubyte[16_384]));
+
+    auto b = a.allocate(42);
+    assert(b.length == 42);
+    assert((() pure nothrow @safe @nogc => a.owns(b))() == Ternary.yes);
+    assert((() nothrow @safe @nogc => a.expand(b, 58))());
+    assert(b.length == 100);
 }

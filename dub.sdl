@@ -2,4 +2,15 @@ name "stdx-allocator"
 description "Extracted std.experimental.allocator"
 authors "Team Phobos"
 copyright "Copyright © 2017, Team Phobos"
-license "Boost"
+license "BSL-1.0"
+
+configuration "library" {
+}
+
+configuration "unittest" {
+    versions "StdUnittest"
+}
+
+buildType "unittest-release" {
+    buildOptions "unittests" "optimize" "releaseMode"
+}
